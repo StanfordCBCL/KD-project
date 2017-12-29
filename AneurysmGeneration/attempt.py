@@ -34,12 +34,11 @@ def mutate_sphere(sphere_name, dr):
 	new.SetFileName("modified_"+sphere_name)
 	new.Write()
 	
-def interpolated_points(numpoints, x_interp, centerrange, rad_shape=None):
+def interpolated_points(x_interp, centerrange, rad_shape=None):
 
 	if rad_shape is None:
 		rad_shape = [0, .5, 1, .5, 0]
 
-	print numpoints
 	print np.linspace(centerrange[0], centerrange[1], 3)
 	print rad_shape
 
@@ -85,6 +84,8 @@ def projection(wall, centerline):
 
 	normalized_wall = np.zeros((NoP_wall))
 
+	wall_to_center = {}
+
 	for i in range(NoP_wall):
 		wall_pt = wall.GetPoints().GetPoint(i)
 
@@ -99,28 +100,32 @@ def projection(wall, centerline):
 
 		normalized_wall[i] = normalized_center[min_idx]
 
-	return (normalized_wall, normalized_center)
+		wall_to_center[i] = centerline.GetPoints().GetPoint(min_idx)
+
+	return (normalized_wall, normalized_center, wall_to_center)
 
 
 def obtain_region(wall, centerline, start=.1, length=.1):
-	normalized_wall, normalized_center = projection(wall, centerline)
-	NoP_wall = wall.GetNumberOfPoints()
+	normalized_wall, normalized_center, wall_to_center = projection(wall, centerline)
 
 	wall_region_id = []
 	axial_pos = []
+	center_region_id = []	
+
+	NoP_wall = wall.GetNumberOfPoints()
+	NoP_center = centerline.GetNumberOfPoints()
+
 	for i in range(NoP_wall):
 		if (normalized_wall[i] >= start) and (normalized_wall[i] <= start + length): 
 			wall_region_id.append(i)
 			axial_pos.append(normalized_wall[i])
 
-	center_region_id = []	
-	NoP_center = centerline.GetNumberOfPoints()
 
 	for i in range(NoP_center):
 		if (normalized_center[i] >= start) and (normalized_center[i] <= start + length):
 			center_region_id.append(i)
 
-	return (wall_region_id, center_region_id, axial_pos)
+	return (wall_region_id, center_region_id, axial_pos, wall_to_center)
 
 
 def grow_aneurysm(wall_name, centerline_name, start=.1, length=.1):
@@ -134,20 +139,25 @@ def grow_aneurysm(wall_name, centerline_name, start=.1, length=.1):
 	centerreader.Update()
 	centerline_model = centerreader.GetOutput()
 
-	wall_region, center_region, axial_pos = obtain_region(wall_model, centerline_model, start, length)
+	wall_region, center_region, axial_pos, wall_to_center = obtain_region(wall_model, centerline_model, start, length)
 
-	print axial_pos
-	r_factor = interpolated_points(0, axial_pos, (min(axial_pos), max(axial_pos)) )
+	#print axial_pos
+	expand = interpolated_points(axial_pos, (min(axial_pos), max(axial_pos)) )
 
-	print len(r_factor)
-	print len(wall_region)
-	print len(axial_pos)
+	#print len(expand)
+	#print len(wall_region)
+	#print len(axial_pos)
 
 	for i, wall_id in enumerate(wall_region):
 		#print 'setting point ', wall_id
-		print 'r_Factor is ', r_factor[i]
+		print 'expand is ', expand[i]
 		cur_pt = wall_model.GetPoints().GetPoint(wall_id)
-		new_pt = [r * (1 + r_factor[i]) for r in cur_pt]
+		normal = [r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[wall_id]) ]
+		print "cur", cur_pt
+		print "n", normal
+		new_pt = [r + expand[i]*dn for (r,dn) in zip(cur_pt, normal)]
+
+		#[r * (1 + expand[i]) for r in cur_pt] #
 		#print 'moving pt from ', cur_pt,
 		#print 'to ', new_pt
 		wall_model.GetPoints().SetPoint(wall_id, new_pt)
@@ -233,7 +243,7 @@ def vis_radial_distribution(radii):
 
 def main():
 
-	sphere_name = "Test.vtp"
+	#sphere_name = "Test.vtp"
 
 	#mutate_sphere(sphere_name, 1)
 	wall = "test_model.vtp"
