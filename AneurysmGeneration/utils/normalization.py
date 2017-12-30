@@ -1,9 +1,29 @@
+'''
+	normalization.py
+
+	Provide utility functinos to project points from the wall polydata to the nearest point in centerline polydata. 
+
+	Normalization and projections adapted from Justin's scripts. 
+'''
+
 import numpy as np
 import vtk
-from vtk.util import numpy_support as nps 
+#from vtk.util import numpy_support as nps 
 
 
 def normalized_centerline(centerline_model):
+	'''
+	input: 
+		* centerline polydata 
+
+	output:
+		* number of points in the centerline, 
+		* list of normalized position (0.0 to 1.0) for each point
+		* total centerline length
+
+	Iterates through the centerline points twice; assumes sum of linear distance between points is reflective
+	of total length of the centerline. 
+	'''
 
 	centerline_length = 0.0
 	NoP = centerline_model.GetNumberOfPoints()
@@ -31,6 +51,21 @@ def normalized_centerline(centerline_model):
 
 
 def projection(wall, centerline):
+	'''
+		input: 
+			* wall polydata 
+			* centerline polydata
+
+		output:
+			* list of normalized centerpoint position for each wall point 
+			* list of normalized centerpoint positions 
+			* dictionary of correspondences between wall point index -> closest centerpoint
+
+		For each wall point, go through all the centerline points and find the closest one. 
+
+		Record the closest normalized centerline distance and centerline point's coordinates. 
+
+	'''
 	NoP_wall = wall.GetNumberOfPoints()
 	NoP_center, normalized_center, centerline_length = normalized_centerline(centerline)
 

@@ -1,3 +1,9 @@
+'''
+	test_construction.py
+
+	Generate a centerline vtp file with 100 points from (0, 0, -2) to (0, 0, 5) for testing purposes
+'''
+
 import vtk
 import numpy as np
 
@@ -25,5 +31,5 @@ def gen_cyl_and_center():
 
 
 if __name__ == "__main__":
-	
+
 	gen_cyl_and_center()
