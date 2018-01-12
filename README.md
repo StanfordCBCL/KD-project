@@ -9,4 +9,4 @@ A script has been written to expand the shell points to produce an aneurysm-like
 
 Further steps will be taken to generate different kinds of shapes. 
 
-![simple expansion](screenshots/progress_1_12.png)
+![simple expansion](AneurysmGeneration/screenshots/progress_1_12.png)
