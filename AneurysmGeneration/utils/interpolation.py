@@ -13,13 +13,15 @@ from scipy import interpolate
 
 def interpolated_points(x_interp, centerrange, rad_shape=None):
 
+	piecewise_NoP = -1
 	if rad_shape is None:
 		rad_shape = [0, .5, 1, .5, 0]
+		piecewise_NoP = 5
 
 	print np.linspace(centerrange[0], centerrange[1], 3)
 	print rad_shape
 
-	tck = interpolate.splrep(np.linspace(centerrange[0], centerrange[1], 5), rad_shape, s=0)
+	tck = interpolate.splrep(np.linspace(centerrange[0], centerrange[1], piecewise_NoP), rad_shape, s=0)
 
 	interpolated = interpolate.splev(x_interp, tck, der=0)
 
