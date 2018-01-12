@@ -105,7 +105,7 @@ def main():
 	centerline = "test_model_centerline.vtp"
 
 	start = .3
-	length = .1 
+	length = .3 
 
 
 	grow_aneurysm(wall, centerline, start = start, length=length)

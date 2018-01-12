@@ -14,9 +14,10 @@ from scipy import interpolate
 def interpolated_points(x_interp, centerrange, rad_shape=None):
 
 	piecewise_NoP = -1
+
 	if rad_shape is None:
-		rad_shape = [0, .5, 1, .5, 0]
-		piecewise_NoP = 5
+		rad_shape = [0, .5, .7, .7, .5, 0]
+		piecewise_NoP = len(rad_shape)
 
 	print np.linspace(centerrange[0], centerrange[1], 3)
 	print rad_shape
