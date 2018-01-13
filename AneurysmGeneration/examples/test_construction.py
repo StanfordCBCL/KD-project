@@ -11,7 +11,7 @@ import numpy as np
 def gen_cyl_and_center():
 	
 
-	points_list = [[0.0, 0.0, i] for i in np.linspace(-2.0, 5.0, 100)]
+	points_list = [[0.0, 0.0, i] for i in np.linspace(-2.0, 5.0, 1000)]
 
 
 	# Create a vtkPoints object and store the points in it
