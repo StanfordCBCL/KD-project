@@ -1,0 +1,27 @@
+global gPolyDataFaceNames
+global gPolyDataFaceNamesInfo
+set gPolyDataFaceNamesInfo(timestamp) {1500000000}
+set gPolyDataFaceNamesInfo(model_file_name) {SKD0050_baseline_model.vtp}
+set gPolyDataFaceNames(1) {wall_aorta}
+set gPolyDataFaceNames(2) {wall_lca1}
+set gPolyDataFaceNames(3) {wall_lca2}
+set gPolyDataFaceNames(4) {wall_lca3}
+set gPolyDataFaceNames(5) {wall_lca4}
+set gPolyDataFaceNames(6) {wall_lca5}
+set gPolyDataFaceNames(7) {wall_lca6}
+set gPolyDataFaceNames(8) {wall_rca1}
+set gPolyDataFaceNames(9) {wall_rca2}
+set gPolyDataFaceNames(10) {wall_rca3}
+set gPolyDataFaceNames(11) {wall_rca4}
+set gPolyDataFaceNames(12) {cap_aorta}
+set gPolyDataFaceNames(13) {cap_lca1}
+set gPolyDataFaceNames(14) {cap_lca2}
+set gPolyDataFaceNames(15) {cap_lca3}
+set gPolyDataFaceNames(16) {cap_lca4}
+set gPolyDataFaceNames(17) {cap_lca5}
+set gPolyDataFaceNames(18) {cap_lca6}
+set gPolyDataFaceNames(19) {cap_rca1}
+set gPolyDataFaceNames(20) {cap_rca2}
+set gPolyDataFaceNames(21) {cap_rca3}
+set gPolyDataFaceNames(22) {cap_rca4}
+set gPolyDataFaceNames(23) {inflow}
