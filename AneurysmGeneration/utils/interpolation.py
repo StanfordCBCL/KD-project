@@ -11,7 +11,7 @@ import numpy as np
 from scipy import interpolate
 import matplotlib.pyplot as plt
 
-def interpolated_points(x_interp, centerrange, rad_shape=None):
+def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='clamped'):
 
 	'''
 	input:
@@ -35,9 +35,12 @@ def interpolated_points(x_interp, centerrange, rad_shape=None):
 	print '------------------------'
 	print 'interpolating points'
 
-	
+
 	#initialize variable to hold the number of points provided in our predefined shape 
 	piecewise_NoP = -1
+
+	#initialize interpolated values
+	interpolated = None
 
 	#default expansion shape; specify by specifying a set of y coords that we assume to be evenly spaced
 	if rad_shape is None:
@@ -46,12 +49,17 @@ def interpolated_points(x_interp, centerrange, rad_shape=None):
 		rad_shape = [0, .25, .5, 1, 1, .5, .25, 0]
 		piecewise_NoP = len(rad_shape)
 
-
 	print rad_shape
 
-	tck = interpolate.splrep(np.linspace(centerrange[0], centerrange[1], piecewise_NoP), rad_shape)
+	if interp_type is 'clamped':
+		print 'cubic spline interpolation will be used with clamped bc'
+		cs = interpolate.CubicSpline(np.linspace(centerrange[0], centerrange[1], piecewise_NoP), rad_shape, bc_type='clamped')
+		interpolated = cs(x_interp)
 
-	interpolated = interpolate.splev(x_interp, tck, der=0)
+	elif interp_type is None:
+	
+		tck = interpolate.splrep(np.linspace(centerrange[0], centerrange[1], piecewise_NoP), rad_shape)
+		interpolated = interpolate.splev(x_interp, tck, der=0)
 
 	return interpolated
 
@@ -63,7 +71,7 @@ if __name__ == "__main__":
 
 	x_interp = np.linspace(.3, .6, 50)
 	centerrange = (.3, .6)
-	result = interpolated_points(x_interp, centerrange)
+	result = interpolated_points(x_interp, centerrange, interp_type='clamped')
 	plt.plot(x_interp, result, x_interp, [(1+a)*b for (a, b) in zip(result, np.ones(50))])
 	plt.show()
 

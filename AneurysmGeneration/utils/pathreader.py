@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 import re 
+import numpy as np
 
 def read_centerline(path_name):
 
@@ -7,17 +8,12 @@ def read_centerline(path_name):
 		xml = f.read()
 	root = ET.fromstring(re.sub(r"(<\?xml[^>]+\?>)", r"\1<root>", xml) + "</root>")
 
-	for child in root:
-		for child_child in child:
-			print child_child.tag, child_child.attrib
-
-
 	path_points = root[1][0][0][1]
 
 	point_list = []
 	for point in path_points:
 		point_coords = point[0].attrib
-		xyz = [int(pos) for pos in [point_coords['x'], point_coords['y'], point_coords['z'] ]]
+		xyz = [float(pos) for pos in [point_coords['x'], point_coords['y'], point_coords['z'] ]]
 		point_list.append(xyz)
 
 
