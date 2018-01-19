@@ -17,10 +17,11 @@ def read_centerline(path_name):
 	point_list = []
 	for point in path_points:
 		point_coords = point[0].attrib
-		point_list.append( [point_coords['x'], point_coords['y'], point_coords['z']])
+		xyz = [int(pos) for pos in [point_coords['x'], point_coords['y'], point_coords['z'] ]]
+		point_list.append(xyz)
 
 
-	return point_list
+	return np.array(point_list)
 
 if __name__ == "__main__":
 	print "testing pathreader.py"

@@ -5,43 +5,63 @@
 import numpy as np
 import vtk
 from parser import *
+from pathreader import read_centerline
 
-def slice_wall(wall, centerline, start=.1, length=.1):
-	'''
-	input: 
-		* wall vtk polydata
-		* centerline vtk polydata
-		* optional region
+def gather_centerlines(model_dir):
+	centerlineNames = gather_centerline_names(model_dir)
+	centers = []
+	for centerline in centerlineNames:
+		centers.append(read_centerline(centerline))
 
-	output: 
-		* list of point IDs of wall points within region
-		* list of point IDs of centerline points within the region
-		* dictionary of wall point ID -> closest centerline point
+	return centers
 
-	Obtains the IDs of wall points and center points that are within the desired region. 
-	'''
 
-	# project wall points to closest centerline point 
-	normalized_wall, normalized_center, wall_to_center = projection(wall, centerline)
+def slice_wall(model_dir):
+	centers = gather_centerlines(model_dir)
 
-	# initialize datastructures
-	wall_region_id = []
-	axial_pos = []
-	center_region_id = []	
 
-	# determine how many points to iterate over
-	NoP_wall = wall.GetNumberOfPoints()
-	NoP_center = centerline.GetNumberOfPoints()
+	return None
 
-	# find the wall points projected into the desired centerline region
-	for i in range(NoP_wall):
-		if (normalized_wall[i] >= start) and (normalized_wall[i] <= start + length): 
-			wall_region_id.append(i)
-			axial_pos.append(normalized_wall[i])
 
-	# find the center points projected within the desired region
-	for i in range(NoP_center):
-		if (normalized_center[i] >= start) and (normalized_center[i] <= start + length):
-			center_region_id.append(i)
+if __name__ == "__main__":
 
-	return (wall_region_id, center_region_id, axial_pos, wall_to_center)
+	print "testing slice.py"
+	print "________________"
+
+	wall_name = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/SKD0050_baseline_model.vtp"
+
+	good_faces = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+	wallreader = vtk.vtkXMLPolyDataReader()
+	wallreader.SetFileName(wall_name)
+	wallreader.Update()
+	wall_model = wallreader.GetOutput()
+
+	NoP = wall_model.GetNumberOfPoints()
+	NoC = wall_model.GetNumberOfCells()
+
+	removed = []
+	for i in range(NoC):
+		
+		faceID = wall_model.GetCellData().GetArray('ModelFaceID').GetTuple(i)[0]
+
+		if faceID not in good_faces:
+			cell_pt_ids = wall_model.GetCell(i).GetPointIds()
+			for j in range(3):
+				#print int(cell_pt_ids.GetId(j))
+				removed.append(int(cell_pt_ids.GetId(j)))
+
+
+	removed = set(removed)
+
+	nonAortaPts = set(xrange(NoP)) - removed
+
+	print len(removed), NoP, len(nonAortaPts)
+
+	centerlineID = np.zeros(NoP)
+
+	for i in nonAortaPts:
+		pt = wall_model.GetPoints().GetPoint(i)
+
+		
+
+

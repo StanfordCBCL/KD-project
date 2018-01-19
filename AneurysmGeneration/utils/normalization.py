@@ -7,8 +7,7 @@
 '''
 
 import numpy as np
-import vtk
-#from vtk.util import numpy_support as nps 
+import vtk 
 
 
 def normalized_centerline(centerline_model):
@@ -49,12 +48,30 @@ def normalized_centerline(centerline_model):
 	return (NoP, normalized, centerline_length)
 
 
+def normalized_centerline_pth(center):
+	centerline_length = 0.0
+	NoP = len(center)
+	normalized = np.zeros(NoP)
+
+	for i in range(1, NoP):
+		pt = center[i]
+		prev_pt = center[i-1]
+		d_temp = vtk.vtkMath.Distance2BetweenPoints(pt, pt_prev)
+		d_temp = np.sqrt(d_temp)
+		centerline_length += d_temp
+		normalized[i] = centerline_length
+
+	normalized /= centerline_length
+
+	return (NoP, normalized, centerline_length)
+
+
 
 def projection(wall, centerline):
 	'''
 		input: 
 			* wall polydata 
-			* centerline polydata
+			* centerline points as np array of shape (NoP, 3) 
 
 		output:
 			* list of normalized centerpoint position for each wall point 
