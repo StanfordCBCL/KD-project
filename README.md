@@ -21,3 +21,5 @@ Progress was also made to increase the smoothness of the aneurysm surface. Initi
 ### Next steps: 
 * work on a real model 
 * develop centerline processing to read in .path file
+* update interpolation to force a smoother blend 
+* develop processing for automated read of coronary tree and more robust positioning of aneurysm growth. 
