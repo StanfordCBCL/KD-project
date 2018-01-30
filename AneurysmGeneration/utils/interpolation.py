@@ -5,13 +5,14 @@
 	provide an interpolated expansion coefficient for each wall point provided. 
 
 	The shape of the expansion function can be specified. 
+	Boundary conditions can also be specified. 
 '''
 
 import numpy as np
 from scipy import interpolate
 import matplotlib.pyplot as plt
 
-def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='clamped'):
+def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='cubic_clamped'):
 
 	'''
 	input:
@@ -51,12 +52,12 @@ def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='clam
 
 	print rad_shape
 
-	if interp_type is 'clamped':
+	if interp_type is 'cubic_clamped':
 		print 'cubic spline interpolation will be used with clamped bc'
 		cs = interpolate.CubicSpline(np.linspace(centerrange[0], centerrange[1], piecewise_NoP), rad_shape, bc_type='clamped')
 		interpolated = cs(x_interp)
 
-	elif interp_type is None:
+	elif interp_type is 'b-spline':
 	
 		tck = interpolate.splrep(np.linspace(centerrange[0], centerrange[1], piecewise_NoP), rad_shape)
 		interpolated = interpolate.splev(x_interp, tck, der=0)

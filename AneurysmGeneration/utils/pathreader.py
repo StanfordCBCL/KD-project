@@ -19,6 +19,9 @@ def read_centerline(path_name):
 
 	return np.array(point_list)
 
+
+
+
 if __name__ == "__main__":
 	print "testing pathreader.py"
 	print "---------------------"

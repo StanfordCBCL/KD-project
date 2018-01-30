@@ -14,7 +14,7 @@ from utils.interpolation import *
 from utils.normalization import *
 
 
-def obtain_region(wall, centerline, start=.1, length=.1):
+def obtain_expansion_region(wall, centerline, start=.1, length=.1):
 	'''
 	input: 
 		* wall vtk polydata
@@ -80,7 +80,7 @@ def grow_aneurysm(wall_name, centerline_name, start=.1, length=.1):
 	centerreader.Update()
 	centerline_model = centerreader.GetOutput()
 
-	wall_region, center_region, axial_pos, wall_to_center = obtain_region(wall_model, centerline_model, start, length)
+	wall_region, center_region, axial_pos, wall_to_center = obtain_expansion_region(wall_model, centerline_model, start, length)
 
 	expand = interpolated_points(axial_pos, (min(axial_pos), max(axial_pos)) )
 
