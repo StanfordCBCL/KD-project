@@ -5,21 +5,46 @@
 
 import argparse
 import subprocess
-
-
-def gather_centerline_names(path_direct):
-	sp = subprocess.Popen('ls ' + path_direct + '*.pth', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	paths = [name.strip() for name in sp.stdout.readlines()]
-	return paths
+from pathreader import *
 
 
 def gather_centerlines(model_dir):
-	centerlineNames = gather_centerline_names(model_dir)
-	centers = []
+		'''
+
+	'''
+	print '---------'
+	print 'gathering centerlines from directory:'
 	print model_dir
-	print centerlineNames
+	
+	# ls the target directory for *.pth 
+	sp = subprocess.Popen('ls ' + model_dir + '*.pth', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+	# strip the file names
+	centerlineNames = [name.strip() for name in sp.stdout.readlines()]
+
+	# user confirmation that we have thee right centerlines
+	print 'gathered the following centerlines: '
+	names = [name[-13:-4] for name in centerlineNames]
+	print names
+
+	centers = []
 	for centerline in centerlineNames:
 		centers.append(read_centerline(centerline))
+
+	return (centers, names)
+
+
+def parse_facenames(names, model_dir, inputFileName="SKD0050_baseline_model.vtp.facenames", ):
+
+	file = open(model_dir+inputFileName)
+	all_lines = [line.split() for line in file.readlines()]
+	corresponding_faces = []
+	for line in all_lines:
+		if line[0] == "set" and (line[-1][1:-1] in names):
+			corresponding_faces.append(int(line[1][19:-1])) 
+
+	return corresponding_faces
+
 
 def parse_commandline():
 
@@ -40,8 +65,15 @@ def parse_commandline():
 	return args
 
 
-
-	return np.array(centers)
 if __name__ == "__main__":
-	path_direct = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
-	print gather_centerline_names(path_direct)
+	print '--------------'
+	print 'testing parser.py'
+
+	print '1) testing gathering centerlines'
+
+	model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
+	#print gather_centerlines(model_dir)
+	centers, centerlineNames = gather_centerlines(model_dir)
+
+	print '2) testing extraction of name-id '
+	parse_facenames(centerlineNames, model_dir)

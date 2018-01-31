@@ -13,7 +13,7 @@ def read_centerline(path_name):
 	point_list = []
 	for point in path_points:
 		point_coords = point[0].attrib
-		xyz = [float(pos) for pos in [point_coords['x'], point_coords['y'], point_coords['z'] ]]
+		xyz = np.array([float(pos) for pos in [point_coords['x'], point_coords['y'], point_coords['z'] ]])
 		point_list.append(xyz)
 
 

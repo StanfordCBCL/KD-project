@@ -101,13 +101,31 @@ def grow_aneurysm(wall_name, centerline_name, start=.1, length=.1):
 
 def main():
 
-	wall = "test_model.vtp"
-	centerline = "test_model_centerline.vtp"
+	#wall = "test_model.vtp"
+	#centerline = "test_model_centerline.vtp"
 
 	start = .3
 	length = .3 
 
+	# define the location of models, centerlines, metadata
+	model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
 
+	# find the centerline files within the model directory and represent them as np arrays; 
+	# find the names of the centerline files (without the .pth file ending)
+	centers, names = gather_centerlines(model_dir)
+
+	# find the face IDs assigned to the cells in the model corresponding to the centerline names in the directory
+	corresponding_faces = parse_facenames(names, model_dir)
+
+	# find the points corresponding to each relevant face IDs
+
+
+	# normalize coordinates for each centerline
+
+
+	# assign each point the normalized coordinate for its closest projected centerline point
+
+	
 	grow_aneurysm(wall, centerline, start = start, length=length)
 
 

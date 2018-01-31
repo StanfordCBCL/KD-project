@@ -10,7 +10,17 @@ from normalization import normalized_centerline_pth
 
 
 
-def wall_isolation(model_dir=None, wall_name=None):
+def wall_isolation(model_dir=None, wall_name=None, VALIDATION=True):
+	'''
+
+	input: 
+		* directory where the model files are
+		* name of the model wall 
+
+	output: 
+		* set of all points excluding the aorta
+		* dictionary that maps face_id to set of point IDs belonging to that facee
+	'''
 
 	print "isolating wall sections"
 	print "________________"
@@ -22,7 +32,7 @@ def wall_isolation(model_dir=None, wall_name=None):
 		model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
 
 	# designate which face ids should be preserved
-	good_faces = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+	good_faces = parse_facenames()
 	face_to_points = {faceID:[] for faceID in good_faces}
 	print good_faces
 
@@ -44,22 +54,31 @@ def wall_isolation(model_dir=None, wall_name=None):
 		faceID = wall_model.GetCellData().GetArray('ModelFaceID').GetTuple(i)[0]
 		cell_pt_ids = wall_model.GetCell(i).GetPointIds()
 
-		if faceID not in good_faces:	
+		if faceID in good_faces:	
+			for j in range(3):
+				face_to_points[faceID].append(int(cell_pt_ids.GetId(j)))
+		else:
 			for j in range(3):
 				removed.append(int(cell_pt_ids.GetId(j)))
 
-		else:
-			for j in range(3):
-				face_to_points[faceID].append(int(cell_pt_ids.getId(j)))
 
-
-	#perform set operation to efficiently remove duplicates 
+	#perform set operations to remove duplicates 
 	removed = set(removed)
 	nonAortaPts = set(xrange(NoP)) - removed
 
-	#confirm that we haven't lost or created new points
-	print len(removed), NoP, len(nonAortaPts)
+	for faceID, pointIDs in face_to_points.iteritems():
+		face_to_points[faceID] = set(pointIDs)
 
+	if VALIDATION:
+		# confirm that we haven't lost or created new points
+		print len(removed), NoP, len(nonAortaPts)
+
+		# confirm that our dictionary no longer contains duplicates
+		c = 0
+		for k, v in face_to_points.iteritems():
+			print len(v)
+			c += len(v)
+		print c 
 
 	return (nonAortaPts, face_to_points)
 
