@@ -9,7 +9,7 @@ from pathreader import *
 
 
 def gather_centerlines(model_dir):
-		'''
+	'''
 
 	'''
 	print '---------'
@@ -22,14 +22,17 @@ def gather_centerlines(model_dir):
 	# strip the file names
 	centerlineNames = [name.strip() for name in sp.stdout.readlines()]
 
-	# user confirmation that we have thee right centerlines
-	print 'gathered the following centerlines: '
+	# additionally strip off path, .pth file ending
 	names = [name[-13:-4] for name in centerlineNames]
+
+	# user confirmation that we have thee right centerlines
+	print 'gathered the following centerlines: '	
 	print names
 
-	centers = []
-	for centerline in centerlineNames:
-		centers.append(read_centerline(centerline))
+	# now that we have the centerline paths and names, read .pth files into our dictionary
+	centers = {}
+	for centerline, name in zip(centerlineNames, names):
+		centers[name] = read_centerline(centerline)
 
 	return (centers, names)
 
@@ -38,12 +41,17 @@ def parse_facenames(names, model_dir, inputFileName="SKD0050_baseline_model.vtp.
 
 	file = open(model_dir+inputFileName)
 	all_lines = [line.split() for line in file.readlines()]
-	corresponding_faces = []
+	corresponding_faces = {}
+	face_list = []
 	for line in all_lines:
-		if line[0] == "set" and (line[-1][1:-1] in names):
-			corresponding_faces.append(int(line[1][19:-1])) 
+		if line[0] == "set":
+			cur_name = line[-1][1:-1]
+			if cur_name in names:
+				faceID = int(line[1][19:-1])
+				face_list.append(faceID) 
+				corresponding_faces[cur_name] = faceID
 
-	return corresponding_faces
+	return (corresponding_faces, face_list)
 
 
 def parse_commandline():

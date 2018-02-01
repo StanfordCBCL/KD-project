@@ -48,6 +48,16 @@ def normalized_centerline(centerline_model):
 	return (NoP, normalized, centerline_length)
 
 
+# def normalized_all_centerlines(centers):
+# 	'''
+# 	'''
+
+# 	for k, v in centers.iteritems():
+# 		centers[k] = normalized_centerline_pth(v)
+
+
+# 	return centers
+
 def normalized_centerline_pth(center):
 	centerline_length = 0.0
 	NoP = len(center)
@@ -56,7 +66,7 @@ def normalized_centerline_pth(center):
 	for i in range(1, NoP):
 		pt = center[i]
 		prev_pt = center[i-1]
-		d_temp = vtk.vtkMath.Distance2BetweenPoints(pt, pt_prev)
+		d_temp = vtk.vtkMath.Distance2BetweenPoints(pt, prev_pt)
 		d_temp = np.sqrt(d_temp)
 		centerline_length += d_temp
 		normalized[i] = centerline_length
@@ -66,8 +76,7 @@ def normalized_centerline_pth(center):
 	return (NoP, normalized, centerline_length)
 
 
-
-def projection(wall, centerline):
+def projection(wall, centerline, included_points):
 	'''
 		input: 
 			* wall polydata 
@@ -84,19 +93,19 @@ def projection(wall, centerline):
 
 	'''
 	NoP_wall = wall.GetNumberOfPoints()
-	NoP_center, normalized_center, centerline_length = normalized_centerline(centerline)
+	NoP_center, normalized_center, centerline_length = normalized_centerline_pth(centerline)
 
 	normalized_wall = np.zeros((NoP_wall))
 
 	wall_to_center = {}
 
-	for i in range(NoP_wall):
+	for i in included_points:
 		wall_pt = wall.GetPoints().GetPoint(i)
 
 		min_dist = float('inf')
 		min_idx = -1
 		for k in range(NoP_center):
-			center_pt = centerline.GetPoints().GetPoint(k)
+			center_pt = centerline[k]
 			cur_dist = vtk.vtkMath.Distance2BetweenPoints(wall_pt, center_pt)
 			if cur_dist < min_dist:
 				min_dist = cur_dist
@@ -104,7 +113,7 @@ def projection(wall, centerline):
 
 		normalized_wall[i] = normalized_center[min_idx]
 
-		wall_to_center[i] = centerline.GetPoints().GetPoint(min_idx)
+		wall_to_center[i] = centerline[min_idx]
 
 	return (normalized_wall, normalized_center, wall_to_center)
 

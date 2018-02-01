@@ -10,7 +10,7 @@ from normalization import normalized_centerline_pth
 
 
 
-def wall_isolation(model_dir=None, wall_name=None, VALIDATION=True):
+def wall_isolation(face_list, model_dir=None, wall_name=None, VALIDATION=True):
 	'''
 
 	input: 
@@ -32,9 +32,8 @@ def wall_isolation(model_dir=None, wall_name=None, VALIDATION=True):
 		model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
 
 	# designate which face ids should be preserved
-	good_faces = parse_facenames()
-	face_to_points = {faceID:[] for faceID in good_faces}
-	print good_faces
+	face_to_points = {faceID:[] for faceID in face_list}
+	print face_list
 
 	# read in the wall
 	wallreader = vtk.vtkXMLPolyDataReader()
@@ -54,7 +53,7 @@ def wall_isolation(model_dir=None, wall_name=None, VALIDATION=True):
 		faceID = wall_model.GetCellData().GetArray('ModelFaceID').GetTuple(i)[0]
 		cell_pt_ids = wall_model.GetCell(i).GetPointIds()
 
-		if faceID in good_faces:	
+		if faceID in face_list:	
 			for j in range(3):
 				face_to_points[faceID].append(int(cell_pt_ids.GetId(j)))
 		else:
