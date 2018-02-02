@@ -106,8 +106,8 @@ def main():
 	#wall = "test_model.vtp"
 	#centerline = "test_model_centerline.vtp"
 
-	start = .3
-	length = .3 
+	start = .25
+	length = .1 
 
 	# define the location of models, centerlines, metadata and specify the wall_name
 	model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
@@ -130,9 +130,9 @@ def main():
 	# to do this, we input the set of centerline points as an np array of [xyz] and 
 	# the set of pointIDs corresponding to the right wall region
 	# 
-	cur_name = names[0]
+	cur_name = names[2]
 	cur_face = corresponding_faces[cur_name]
-	cur_center = centers[cur_name]
+	cur_center = resample_centerline(centers[cur_name])
 	cur_points = face_to_points[cur_face]
 	grow_aneurysm(wall_name, cur_center, cur_points, start=start, length=length)
 

@@ -19,11 +19,19 @@ Implementation of clamped boundary conditions allows for a smoother transition z
 
 ![clamped bc example](AneurysmGeneration/screenshots/progress_1_19.png)
 
+As of 2/1/2018: Full model generation kind of works! Shapes are awkward but full model is workable. 
+
+![expansion of RCA](AneurysmGeneration/screenshots/progress_2_1.png)
+![WT of RCA](AneurysmGeneration/screenshots/progress_2_1_2.png)
+
+
+
+
 ### Notes:
 * discovered that the model looked ribbed because there were not enough points in the centerline; centerline points increased.
 * ridge when bc is not 0 looks really awkward; now using 1D cubic spline interpolation allowing zero-derivative boundary conditions.  
 
+
+
 ### Next steps: 
-* work on a real model 
-* more efficiently remove aorta points from full model. 
-* develop processing for automated read of coronary tree and more robust positioning of aneurysm growth. 
+* 

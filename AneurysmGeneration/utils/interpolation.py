@@ -11,6 +11,7 @@
 import numpy as np
 from scipy import interpolate
 import matplotlib.pyplot as plt
+from pathreader import *
 
 def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='cubic_clamped'):
 
@@ -47,7 +48,7 @@ def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='cubi
 	if rad_shape is None:
 		print 'default rad_shape will be used'
 		#rad_shape = [0, .1, .3, .5, .6, .6, .5, .3, .1, 0]
-		rad_shape = [0, .25, .5, 1, 1, .5, .25, 0]
+		rad_shape = [0, .75, 1.5, 2, 2, 1.5, .75, 0]
 		piecewise_NoP = len(rad_shape)
 
 	print rad_shape
@@ -65,15 +66,57 @@ def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='cubi
 	return interpolated
 
 
+def resample_centerline(centerline, length=None):
+
+	print 'trying to resample centerline'
+	print centerline.shape
+	# spline parameters
+	s=0.01 	# smoothness parameter
+	k=3 	# spline order
+	nest=-1 # estimate of number of knots needed (-1 = maximal)
+
+	centerline = np.transpose(centerline)
+
+	# find the knot points
+	tckp,u = interpolate.splprep(centerline, s=s,k=k)
+
+
+	print centerline.shape
+
+	if length is None:
+		length = len(centerline[0])
+	nSpoints = length*20
+
+	# evaluate spline, including interpolated points
+	xs,ys,zs = interpolate.splev(np.linspace(0,1,nSpoints),tckp)
+
+	print np.stack((xs, ys, zs)).shape
+	return np.transpose(np.stack((xs, ys, zs)))
+
 
 if __name__ == "__main__":
-	print 'testing interpolation'
+
+	# print 'testing interpolation'
+	# print '---------------------'
+
+	# x_interp = np.linspace(.3, .6, 50)
+	# centerrange = (.3, .6)
+	# result = interpolated_points(x_interp, centerrange, interp_type='clamped')
+	# plt.plot(x_interp, result, x_interp, [(1+a)*b for (a, b) in zip(result, np.ones(50))])
+	# plt.show()
+
+
+
+	print 'testing resample_centerline'
 	print '---------------------'
 
-	x_interp = np.linspace(.3, .6, 50)
-	centerrange = (.3, .6)
-	result = interpolated_points(x_interp, centerrange, interp_type='clamped')
-	plt.plot(x_interp, result, x_interp, [(1+a)*b for (a, b) in zip(result, np.ones(50))])
-	plt.show()
+	c_path = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/wall_lca1.pth"
 
+	centerline = np.transpose(read_centerline(c_path))
+
+	print centerline
+	lol = resample_centerline(centerline)
+	
+	print lol
+	
 
