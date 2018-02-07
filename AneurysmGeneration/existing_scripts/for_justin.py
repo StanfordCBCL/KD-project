@@ -2,6 +2,9 @@
 	pathreader.py
 
 	Provides functionality for parsing point data out of an XML .pth file into an ndarray of shape (n,3). 
+
+	I also stuck in the functions for normalizing the centerline and mapping each vessel wall point to nearest centerline point 
+	which were adapted from Justin's scripts. 
 '''
 
 import xml.etree.ElementTree as ET 

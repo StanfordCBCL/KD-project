@@ -59,6 +59,20 @@ def normalized_centerline(centerline_model):
 # 	return centers
 
 def normalized_centerline_pth(center):
+	'''
+	input:
+		* np array of shape (NoP, 3)
+
+	output: 
+		* NoP
+		* np array of length NoP, containing normalized coordinate for each
+		* total centerline length
+
+	Assigns each centerline point a total length-normalized position, holding assigned coordinate
+	in form of np array with shape (NoP,). 
+	
+	'''
+
 	centerline_length = 0.0
 	NoP = len(center)
 	normalized = np.zeros(NoP)
