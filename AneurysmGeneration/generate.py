@@ -56,14 +56,24 @@ def obtain_expansion_region(wall, centerline, included_points, start=.1, length=
 	return (wall_region_id, center_region_id, axial_pos, wall_to_center)
 
 
+def resolve_branching(face_list, face_to_points, face_to_cap):
+	'''
+
+	'''
 
 
-def grow_aneurysm(wall_name, centerline, included_points, start=.1, length=.1):
+	return 
+
+
+
+def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face, face_to_cap, start=.1, length=.1):
 	'''
 	input: 
 		* name of wall vtp file
 		* np array of centerline points 
+		* included points, the pointIDs of the wall that we're considering
 		* optional region specification
+		* 
 
 	output:
 		* writes a file to current working directory named "modified_"+wall_name
@@ -76,24 +86,61 @@ def grow_aneurysm(wall_name, centerline, included_points, start=.1, length=.1):
 	wallreader.Update()
 	wall_model = wallreader.GetOutput()
 
-
-	# centerreader = vtk.vtkXMLPolyDataReader()
-	# centerreader.SetFileName(centerline_name)
-	# centerreader.Update()
-	# centerline_model = centerreader.GetOutput()
+	included_points = face_to_points[cur_face]
 
 	wall_region, center_region, axial_pos, wall_to_center = obtain_expansion_region(wall_model, centerline, included_points, start, length)
 
+
+	intersect = {}
+	affected_face_set = set()
+
+	for pt in wall_region:
+		belong_faces = point_to_face[pt]
+		if len(belong_faces) > 1:
+#			intersection[pt] = belon
+			for face in belong_faces: 
+				if face != cur_face:
+					intersect[pt] = face
+					affected_face_set.add(face)
+
+	affected_face_displace = {faceID:[] for faceID in affected_face_set}
+
+#	branch_displacements = {pointID:[] for pointID in intersection} 
+
+
 	expand = interpolated_points(axial_pos, (min(axial_pos), max(axial_pos)) )
 
-	for i, wall_id in enumerate(wall_region):
 
-		cur_pt = wall_model.GetPoints().GetPoint(wall_id)
-		normal = [r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[wall_id]) ]
+	for i, pointID in enumerate(wall_region):
 
-		new_pt = [r + expand[i]*dn for (r,dn) in zip(cur_pt, normal)]
+		cur_pt = wall_model.GetPoints().GetPoint(pointID)
+		normal = [r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ]
 
-		wall_model.GetPoints().SetPoint(wall_id, new_pt)
+		displace = [expand[i]*dn for (r, dn) in zip(cur_pt, normal)]
+		new_pt = [r + dr for (r, dr) in zip(cur_pt, displace)]
+		#new_pt = [r + expand[i]*dn for (r,dn) in zip(cur_pt, normal)]
+		wall_model.GetPoints().SetPoint(pointID, new_pt)
+
+		if pointID in intersect.keys():
+			affected_face_displace[intersect[pointID]].append(np.array(displace))
+
+	# consolidate affected branch displacements
+
+	for faceID, displace_list in affected_face_displace.iteritems():
+		average_displace = np.max(np.array(displace_list), axis=0)
+		affected_face_displace[faceID] = average_displace
+
+	# apply displacement to affected branches and associated caps
+
+	for faceID, d in affected_face_displace.iteritems():
+		cap_points = face_to_cap[faceID]
+		vessel_points = face_to_points[faceID] - set(wall_region)
+
+		for pointID in cap_points.union(vessel_points):
+			cur_pt = wall_model.GetPoints().GetPoint(pointID)
+			new_pt = [r + dr for (r, dr) in zip(cur_pt, d)]
+			wall_model.GetPoints().SetPoint(pointID, new_pt)
+
 
 	new = vtk.vtkXMLPolyDataWriter()
 	new.SetInputData(wall_model)
@@ -101,13 +148,12 @@ def grow_aneurysm(wall_name, centerline, included_points, start=.1, length=.1):
 	new.Write()
 
 
+
 def main():
 
-	#wall = "test_model.vtp"
-	#centerline = "test_model_centerline.vtp"
 
-	start = .25
-	length = .1 
+	start = .55
+	length = .3 
 
 	# define the location of models, centerlines, metadata and specify the wall_name
 	model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
@@ -122,9 +168,19 @@ def main():
 	# note: this matches centerline name against its faceID 
 	corresponding_faces, face_list = parse_facenames(names, model_dir)
 
-	# find the points corresponding to each relevant face ID
+
+	# be lazy and hard code the exclude, face, and cap list
+	exclude = [1]
+	face_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+	cap_list = [13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
+
+	# find the points corresponding to each relevant face ID and each cap ID
 	# note: face_to_points is from faceID to list of pointID
-	nonAortaPts, face_to_points = wall_isolation(face_list, model_dir=model_dir, wall_name=wall_name)
+	face_to_points, cap_to_points, NoP = wall_isolation(face_list, cap_list, exclude, model_dir=model_dir, wall_name=wall_name)
+
+	# determine the branching structure by looking at intersections of point IDs between face ID designations
+	# determine which caps belong to which faces by looking at intersections
+	point_to_face, face_to_cap = determine_overlap(face_to_points, cap_to_points, NoP)
 
 	# prepare to grow an aneurysm at a specific region along a specified centerline
 	# to do this, we input the set of centerline points as an np array of [xyz] and 
@@ -134,13 +190,9 @@ def main():
 	cur_face = corresponding_faces[cur_name]
 	cur_center = resample_centerline(centers[cur_name])
 	cur_points = face_to_points[cur_face]
-	grow_aneurysm(wall_name, cur_center, cur_points, start=start, length=length)
+	grow_aneurysm(wall_name, cur_center, cur_face, face_to_points, point_to_face, face_to_cap, start=start, length=length)
 
-	# normalize coordinates for each centerline
-	# norm_centers = normalized_all_centerlines(centers)
-
-	# assign each point the normalized coordinate for its closest projected centerline point
-
+	
 
 	
 

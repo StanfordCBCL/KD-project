@@ -48,16 +48,6 @@ def normalized_centerline(centerline_model):
 	return (NoP, normalized, centerline_length)
 
 
-# def normalized_all_centerlines(centers):
-# 	'''
-# 	'''
-
-# 	for k, v in centers.iteritems():
-# 		centers[k] = normalized_centerline_pth(v)
-
-
-# 	return centers
-
 def normalized_centerline_pth(center):
 	'''
 	input:
