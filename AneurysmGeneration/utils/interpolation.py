@@ -48,7 +48,8 @@ def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='cubi
 	if rad_shape is None:
 		print 'default rad_shape will be used'
 		#rad_shape = [0, .1, .3, .5, .6, .6, .5, .3, .1, 0]
-		rad_shape = [0, .75, 1.5, 2, 2, 1.5, .75, 0]
+		# rad_shape = [0, .75, 1.5, 2, 2, 1.5, .75, 0]
+		rad_shape =[0, 1, 2, 3, 4, 4, 3, 2, 1, 0]
 		piecewise_NoP = len(rad_shape)
 
 	print rad_shape

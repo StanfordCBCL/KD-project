@@ -97,7 +97,6 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 	for pt in wall_region:
 		belong_faces = point_to_face[pt]
 		if len(belong_faces) > 1:
-#			intersection[pt] = belon
 			for face in belong_faces: 
 				if face != cur_face:
 					intersect[pt] = face
@@ -105,11 +104,7 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 
 	affected_face_displace = {faceID:[] for faceID in affected_face_set}
 
-#	branch_displacements = {pointID:[] for pointID in intersection} 
-
-
 	expand = interpolated_points(axial_pos, (min(axial_pos), max(axial_pos)) )
-
 
 	for i, pointID in enumerate(wall_region):
 
@@ -118,20 +113,20 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 
 		displace = [expand[i]*dn for (r, dn) in zip(cur_pt, normal)]
 		new_pt = [r + dr for (r, dr) in zip(cur_pt, displace)]
-		#new_pt = [r + expand[i]*dn for (r,dn) in zip(cur_pt, normal)]
 		wall_model.GetPoints().SetPoint(pointID, new_pt)
 
 		if pointID in intersect.keys():
 			affected_face_displace[intersect[pointID]].append(np.array(displace))
 
 	# consolidate affected branch displacements
-
 	for faceID, displace_list in affected_face_displace.iteritems():
-		average_displace = np.max(np.array(displace_list), axis=0)
-		affected_face_displace[faceID] = average_displace
+
+		# compute the L2 norms of each displacement vector; select single displacement with the largest L2 norm
+		displace_idx = np.argmax([np.sqrt(x**2 + y**2 + z**2) for (x,y,z) in displace_list])
+		#average_displace = np.max(np.array(displace_list), axis=0)
+		affected_face_displace[faceID] = displace_list[displace_idx]
 
 	# apply displacement to affected branches and associated caps
-
 	for faceID, d in affected_face_displace.iteritems():
 		cap_points = face_to_cap[faceID]
 		vessel_points = face_to_points[faceID] - set(wall_region)
@@ -141,6 +136,7 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 			new_pt = [r + dr for (r, dr) in zip(cur_pt, d)]
 			wall_model.GetPoints().SetPoint(pointID, new_pt)
 
+	# write out the file 
 
 	new = vtk.vtkXMLPolyDataWriter()
 	new.SetInputData(wall_model)
@@ -153,7 +149,7 @@ def main():
 
 
 	start = .55
-	length = .3 
+	length = .3
 
 	# define the location of models, centerlines, metadata and specify the wall_name
 	model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
