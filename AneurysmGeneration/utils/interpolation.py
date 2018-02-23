@@ -1,9 +1,7 @@
 '''
 	interpolation.py
-
 	Given a specified normalized centerline region (a, b) s.t. a, b in (0.0, 1.0) and a < b, 
 	provide an interpolated expansion coefficient for each wall point provided. 
-
 	The shape of the expansion function can be specified. 
 	Boundary conditions can also be specified. 
 '''
@@ -20,22 +18,20 @@ def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='cubi
 		* x_interp, a vector normalized centerline coordinates that each need to be assigned an expansion coefficient 
 		* centerrange, a tuple that describes the range of x coordinates that must be assigned 
 		* rad_shape, an optional descriptor that allows for different shapes of aneurysms to be specified
-
 	output: 
 		* interpolated, a vector with len = len(x_interp) that contains radial expansion coefficients
 		* 
-
 	interpolated_points returns a set of radial expansion coefficients that fit a specificied shape by using scipy's 
 	spline interpolation to first represent a set of points with spline, and then return the predicted fits corresponding 
 	to new points. 
 		i.e. we put in a shape as vector x, vector y, and then another vector my_x to get a vector my_y .
-
 	We will be able to specify the shape of the aneurysm depending on our initial shape governed by x, y. 
 	'''
 
 
-	print '------------------------'
+	
 	print 'interpolating points'
+	print '------------------------'
 
 
 	#initialize variable to hold the number of points provided in our predefined shape 
@@ -50,8 +46,17 @@ def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='cubi
 		#rad_shape = [0, .1, .3, .5, .6, .6, .5, .3, .1, 0]
 		# rad_shape = [0, .75, 1.5, 2, 2, 1.5, .75, 0]
 		rad_shape =[0, 1, 2, 3, 4, 4, 3, 2, 1, 0]
-		piecewise_NoP = len(rad_shape)
 
+	else:
+		print 'rad_shape has been specified:'
+		start, middle, end = rad_shape
+		rad_shape = [start, .5*(start + middle), middle, .5*(middle + end), end]
+
+	# if it's not none, expect it to be a tuple of (start prescribed radius, max prescribed radius, end prescribed radius)
+	# so we should maybe supplement it with some other points
+
+	piecewise_NoP = len(rad_shape)
+	print 'the rad shape to be used for aneurysm growth:'
 	print rad_shape
 
 	if interp_type is 'cubic_clamped':
@@ -60,10 +65,12 @@ def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='cubi
 		interpolated = cs(x_interp)
 
 	elif interp_type is 'b-spline':
-	
+		print 'b-spline interpolation will be used'
 		tck = interpolate.splrep(np.linspace(centerrange[0], centerrange[1], piecewise_NoP), rad_shape)
 		interpolated = interpolate.splev(x_interp, tck, der=0)
 
+	print 'done interpolating points '
+	print '--------------------------'
 	return interpolated
 
 
@@ -91,7 +98,9 @@ def resample_centerline(centerline, length=None):
 	# evaluate spline, including interpolated points
 	xs,ys,zs = interpolate.splev(np.linspace(0,1,nSpoints),tckp)
 
-	print np.stack((xs, ys, zs)).shape
+	print 'done resampling centerline'
+	print '--------------------------'
+	#print np.stack((xs, ys, zs)).shape
 	return np.transpose(np.stack((xs, ys, zs)))
 
 
@@ -119,5 +128,3 @@ if __name__ == "__main__":
 	lol = resample_centerline(centerline)
 	
 	print lol
-	
-

@@ -137,6 +137,9 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None,
 	# 		c += len(v)
 	# 	print c 
 
+	print 'done isolating wall sections'
+	print '----------------------------'
+
 	return (face_to_points, cap_to_points, NoP)
 
 

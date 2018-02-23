@@ -15,7 +15,7 @@ from utils.normalization import *
 from utils.parser import *
 from utils.slice import *
 
-def obtain_expansion_region(wall, centerline, included_points, start=.1, length=.1):
+def obtain_expansion_region(wall, centerline, included_points, start=.1, length=.1, EPSILON=.005):
 	'''
 	input: 
 		* wall vtk polydata
@@ -30,6 +30,8 @@ def obtain_expansion_region(wall, centerline, included_points, start=.1, length=
 	Obtains the IDs of wall points and center points that are within the desired region. 
 	'''
 
+	print 'Obtaining the expansion region'
+	print '------------------------------'
 	# project wall points to closest centerline point 
 	normalized_wall, normalized_center, wall_to_center = projection(wall, centerline, included_points)
 
@@ -37,7 +39,8 @@ def obtain_expansion_region(wall, centerline, included_points, start=.1, length=
 	wall_region_id = []
 	axial_pos = []
 	center_region_id = []	
-
+	start_border = []
+	end_border = []
 	# determine how many points to iterate over
 	NoP_wall = wall.GetNumberOfPoints()
 	NoP_center = len(centerline)
@@ -47,13 +50,19 @@ def obtain_expansion_region(wall, centerline, included_points, start=.1, length=
 		if (normalized_wall[i] >= start) and (normalized_wall[i] <= start + length): 
 			wall_region_id.append(i)
 			axial_pos.append(normalized_wall[i])
+			if normalized_wall[i] < start + EPSILON:
+				start_border.append(i)
+			if normalized_wall[i] > start + length - EPSILON:
+				end_border.append(i)
 
 	# find the center points projected within the desired region
 	for i in range(NoP_center):
 		if (normalized_center[i] >= start) and (normalized_center[i] <= start + length):
 			center_region_id.append(i)
 
-	return (wall_region_id, center_region_id, axial_pos, wall_to_center)
+	print 'Done obtaining the expansion region'
+	print '-----------------------------------'
+	return (wall_region_id, center_region_id, axial_pos, wall_to_center, start_border, end_border)
 
 
 def resolve_branching(face_list, face_to_points, face_to_cap):
@@ -66,7 +75,7 @@ def resolve_branching(face_list, face_to_points, face_to_cap):
 
 
 
-def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face, face_to_cap, start=.1, length=.1):
+def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face, face_to_cap, start=.1, length=.1, rad_max = 4):
 	'''
 	input: 
 		* name of wall vtp file
@@ -81,6 +90,10 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 	Given an input wall and centerline, artificially grow and aneurysm at the desired region. 
 	'''
 
+	print 'Preparing to grow aneurysm'
+	print '--------------------------'
+
+
 	wallreader = vtk.vtkXMLPolyDataReader()
 	wallreader.SetFileName(wall_name)
 	wallreader.Update()
@@ -88,8 +101,22 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 
 	included_points = face_to_points[cur_face]
 
-	wall_region, center_region, axial_pos, wall_to_center = obtain_expansion_region(wall_model, centerline, included_points, start, length)
+	wall_region, center_region, axial_pos, wall_to_center, start_border, end_border = obtain_expansion_region(wall_model, centerline, included_points, start, length)
 
+
+
+	start_radii = []
+	end_radii = []
+	for pointID in start_border:
+
+		cur_pt = wall_model.GetPoints().GetPoint(pointID)
+		radial_component = np.linalg.norm([r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ])
+		start_radii.append(radial_component)
+
+	for pointID in end_border:
+		cur_pt = wall_model.GetPoints().GetPoint(pointID)
+		radial_component = np.linalg.norm([r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ])
+		end_radii.append(radial_component)
 
 	intersect = {}
 	affected_face_set = set()
@@ -104,7 +131,12 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 
 	affected_face_displace = {faceID:[] for faceID in affected_face_set}
 
-	expand = interpolated_points(axial_pos, (min(axial_pos), max(axial_pos)) )
+	expand = interpolated_points(axial_pos, 
+								(min(axial_pos), max(axial_pos)), 
+								rad_shape=[np.median(start_radii), rad_max, np.median(end_radii) ] 
+								)
+
+	expand_np = np.zeros((1, wall_model.GetNumberOfPoints() ))
 
 	for i, pointID in enumerate(wall_region):
 
@@ -114,6 +146,9 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 		displace = [expand[i]*dn for (r, dn) in zip(cur_pt, normal)]
 		new_pt = [r + dr for (r, dr) in zip(cur_pt, displace)]
 		wall_model.GetPoints().SetPoint(pointID, new_pt)
+
+		# record the displacement for visualization on the np array
+		expand_np[:,pointID] = np.linalg.norm(displace)
 
 		if pointID in intersect.keys():
 			affected_face_displace[intersect[pointID]].append(np.array(displace))
@@ -136,19 +171,25 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 			new_pt = [r + dr for (r, dr) in zip(cur_pt, d)]
 			wall_model.GetPoints().SetPoint(pointID, new_pt)
 
-	# write out the file 
+	# add the expansion norms to the vtk file
+	expand_vtk = nps.numpy_to_vtk(expand_np[0])
+	expand_vtk.SetName('expand norm')
+	wall_model.GetPointData().AddArray(expand_vtk)
 
+	# write out the final vtk file
 	new = vtk.vtkXMLPolyDataWriter()
 	new.SetInputData(wall_model)
 	new.SetFileName(wall_name[:-4] + '_modified.vtp')
 	new.Write()
 
+	print 'done growing aneurysm!'
+	print '----------------------'
 
 
 def main():
 
 
-	start = .55
+	start = .4
 	length = .3
 
 	# define the location of models, centerlines, metadata and specify the wall_name
@@ -195,8 +236,4 @@ def main():
 if __name__ == "__main__":
 
 	main()
-
-
-
-
 

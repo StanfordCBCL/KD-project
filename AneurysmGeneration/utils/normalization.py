@@ -63,6 +63,8 @@ def normalized_centerline_pth(center):
 	
 	'''
 
+	print 'normalizing the centerline'
+	print '--------------------------'
 	centerline_length = 0.0
 	NoP = len(center)
 	normalized = np.zeros(NoP)
@@ -96,6 +98,9 @@ def projection(wall, centerline, included_points):
 		Record the closest normalized centerline distance and centerline point's coordinates. 
 
 	'''
+
+	print 'projecting wall points onto the centerline'
+	print '------------------------------------------'
 	NoP_wall = wall.GetNumberOfPoints()
 	NoP_center, normalized_center, centerline_length = normalized_centerline_pth(centerline)
 
