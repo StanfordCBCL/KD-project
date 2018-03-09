@@ -15,7 +15,8 @@ from utils.normalization import *
 from utils.parser import *
 from utils.slice import *
 
-def obtain_expansion_region(wall, centerline, included_points, start=.1, length=.1, EPSILON=.005):
+
+def obtain_expansion_region(wall, centerline, included_points, start=.1, length=.1, EPSILON=.002):
 	'''
 	input: 
 		* wall vtk polydata
@@ -55,6 +56,10 @@ def obtain_expansion_region(wall, centerline, included_points, start=.1, length=
 			if normalized_wall[i] > start + length - EPSILON:
 				end_border.append(i)
 
+	# report the number of border poitns identified:
+	print 'the number of points in the start border: ', len(start_border)
+	print 'the number of points in the end border: ', len(end_border)
+
 	# find the center points projected within the desired region
 	for i in range(NoP_center):
 		if (normalized_center[i] >= start) and (normalized_center[i] <= start + length):
@@ -74,8 +79,24 @@ def resolve_branching(face_list, face_to_points, face_to_cap):
 	return 
 
 
+def acquire_start_end(start_border, end_border, wall_model, wall_to_center):
+	start_radii = []
+	end_radii = []
+	for pointID in start_border:
 
-def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face, face_to_cap, start=.1, length=.1, rad_max = 4):
+		cur_pt = wall_model.GetPoints().GetPoint(pointID)
+		radial_component = np.linalg.norm([r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ])
+		start_radii.append(radial_component)
+
+	for pointID in end_border:
+		cur_pt = wall_model.GetPoints().GetPoint(pointID)
+		radial_component = np.linalg.norm([r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ])
+		end_radii.append(radial_component)
+
+	return (start_radii, end_radii)
+
+
+def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face, face_to_cap, start=.1, length=.1, rad_max = .8):
 	'''
 	input: 
 		* name of wall vtp file
@@ -103,20 +124,8 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 
 	wall_region, center_region, axial_pos, wall_to_center, start_border, end_border = obtain_expansion_region(wall_model, centerline, included_points, start, length)
 
-
-
-	start_radii = []
-	end_radii = []
-	for pointID in start_border:
-
-		cur_pt = wall_model.GetPoints().GetPoint(pointID)
-		radial_component = np.linalg.norm([r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ])
-		start_radii.append(radial_component)
-
-	for pointID in end_border:
-		cur_pt = wall_model.GetPoints().GetPoint(pointID)
-		radial_component = np.linalg.norm([r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ])
-		end_radii.append(radial_component)
+	start_radii, end_radii = acquire_start_end(start_border, end_border, wall_model, wall_to_center)
+	
 
 	intersect = {}
 	affected_face_set = set()
@@ -138,17 +147,49 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 
 	expand_np = np.zeros((1, wall_model.GetNumberOfPoints() ))
 
+
+
+
+	# for i, pointID in enumerate(wall_region):
+
+	# 	cur_pt = wall_model.GetPoints().GetPoint(pointID)
+	# 	normal = [r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ]
+
+
+	# 	displace = [expand[i]*dn for (r, dn) in zip(cur_pt, normal)]
+	# 	new_pt = [r + dr for (r, dr) in zip(cur_pt, displace)]
+	# 	wall_model.GetPoints().SetPoint(pointID, new_pt)
+
+	# 	# record the displacement for visualization on the np array
+	# 	expand_np[:,pointID] = np.linalg.norm(displace)
+
+	# 	if pointID in intersect.keys():
+	# 		affected_face_displace[intersect[pointID]].append(np.array(displace))
+
 	for i, pointID in enumerate(wall_region):
 
 		cur_pt = wall_model.GetPoints().GetPoint(pointID)
 		normal = [r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ]
+		rad = np.linalg.norm(normal)
+		
+		# print rad
+		# print expand[i]
 
-		displace = [expand[i]*dn for (r, dn) in zip(cur_pt, normal)]
-		new_pt = [r + dr for (r, dr) in zip(cur_pt, displace)]
+	 	radial_unit_vec = [xi/rad for xi in normal]
+		#print 'magnitude of radial_unit_vec:', np.linalg.norm(radial_unit_vec)
+
+		displace = [r*expand[i] for r in radial_unit_vec]
+		new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
+
+		#print 'moving pt from:', cur_pt
+		#print 'to:', new_pt
+		#displace = [r2 - r1 for (r1, r2) in zip(normal, new_pt)]
+		displace_mag = np.linalg.norm(displace)
+
 		wall_model.GetPoints().SetPoint(pointID, new_pt)
 
 		# record the displacement for visualization on the np array
-		expand_np[:,pointID] = np.linalg.norm(displace)
+		expand_np[:,pointID] = displace_mag
 
 		if pointID in intersect.keys():
 			affected_face_displace[intersect[pointID]].append(np.array(displace))
@@ -229,9 +270,6 @@ def main():
 	cur_points = face_to_points[cur_face]
 	grow_aneurysm(wall_name, cur_center, cur_face, face_to_points, point_to_face, face_to_cap, start=start, length=length)
 
-	
-
-	
 
 if __name__ == "__main__":
 

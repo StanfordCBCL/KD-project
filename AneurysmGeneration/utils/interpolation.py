@@ -1,6 +1,8 @@
 '''
 	interpolation.py
-	Given a specified normalized centerline region (a, b) s.t. a, b in (0.0, 1.0) and a < b, 
+
+	Given a specified normalized centerline region bounded by 
+		(a, b) s.t. a, b in (0.0, 1.0) and a < b, 
 	provide an interpolated expansion coefficient for each wall point provided. 
 	The shape of the expansion function can be specified. 
 	Boundary conditions can also be specified. 
