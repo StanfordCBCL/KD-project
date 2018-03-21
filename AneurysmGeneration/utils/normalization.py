@@ -87,6 +87,7 @@ def projection(wall, centerline, included_points):
 		input: 
 			* wall polydata 
 			* centerline points as np array of shape (NoP, 3) 
+			* included_points, the list of point IDs for the vessel wall we are considering
 
 		output:
 			* list of normalized centerpoint position for each wall point 

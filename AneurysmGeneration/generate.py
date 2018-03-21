@@ -70,11 +70,28 @@ def obtain_expansion_region(wall, centerline, included_points, start=.1, length=
 	return (wall_region_id, center_region_id, axial_pos, wall_to_center, start_border, end_border)
 
 
-def resolve_branching(face_list, face_to_points, face_to_cap):
+def resolve_branching(wall_model, wall_region, affected_face_displace, face_to_cap, face_to_points):
 	'''
 
 	'''
 
+	# consolidate affected branch displacements
+	for faceID, displace_list in affected_face_displace.iteritems():
+
+		# compute the L2 norms of each displacement vector; select single displacement with the largest L2 norm
+		displace_idx = np.argmax([np.sqrt(x**2 + y**2 + z**2) for (x,y,z) in displace_list])
+		#average_displace = np.max(np.array(displace_list), axis=0)
+		affected_face_displace[faceID] = displace_list[displace_idx]
+
+	# apply displacement to affected branches and associated caps
+	for faceID, displace in affected_face_displace.iteritems():
+		cap_points = face_to_cap[faceID]
+		vessel_points = face_to_points[faceID] - set(wall_region)
+
+		for pointID in cap_points.union(vessel_points):
+			cur_pt = wall_model.GetPoints().GetPoint(pointID)
+			new_pt = [r + dr for (r, dr) in zip(cur_pt, displace)]
+			wall_model.GetPoints().SetPoint(pointID, new_pt)
 
 	return 
 
@@ -94,6 +111,7 @@ def acquire_start_end(start_border, end_border, wall_model, wall_to_center):
 		end_radii.append(radial_component)
 
 	return (start_radii, end_radii)
+
 
 
 def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face, face_to_cap, start=.1, length=.1, rad_max = .8):
@@ -122,7 +140,11 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 
 	included_points = face_to_points[cur_face]
 
-	wall_region, center_region, axial_pos, wall_to_center, start_border, end_border = obtain_expansion_region(wall_model, centerline, included_points, start, length)
+	wall_region, center_region, axial_pos, wall_to_center, start_border, end_border = obtain_expansion_region(wall_model, 
+																											centerline,
+																											included_points,
+																											start,
+																											length)
 
 	start_radii, end_radii = acquire_start_end(start_border, end_border, wall_model, wall_to_center)
 	
@@ -171,46 +193,24 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 		cur_pt = wall_model.GetPoints().GetPoint(pointID)
 		normal = [r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ]
 		rad = np.linalg.norm(normal)
-		
-		# print rad
-		# print expand[i]
 
 	 	radial_unit_vec = [xi/rad for xi in normal]
-		#print 'magnitude of radial_unit_vec:', np.linalg.norm(radial_unit_vec)
 
 		displace = [r*expand[i] for r in radial_unit_vec]
 		new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
 
-		#print 'moving pt from:', cur_pt
-		#print 'to:', new_pt
-		#displace = [r2 - r1 for (r1, r2) in zip(normal, new_pt)]
-		displace_mag = np.linalg.norm(displace)
-
 		wall_model.GetPoints().SetPoint(pointID, new_pt)
 
 		# record the displacement for visualization on the np array
+		displace_mag = np.linalg.norm(displace)
 		expand_np[:,pointID] = displace_mag
 
+		displace_adjusted = [d - n for (d, n) in zip (displace, normal)]
 		if pointID in intersect.keys():
-			affected_face_displace[intersect[pointID]].append(np.array(displace))
+			affected_face_displace[intersect[pointID]].append(np.array(displace_adjusted))
 
-	# consolidate affected branch displacements
-	for faceID, displace_list in affected_face_displace.iteritems():
-
-		# compute the L2 norms of each displacement vector; select single displacement with the largest L2 norm
-		displace_idx = np.argmax([np.sqrt(x**2 + y**2 + z**2) for (x,y,z) in displace_list])
-		#average_displace = np.max(np.array(displace_list), axis=0)
-		affected_face_displace[faceID] = displace_list[displace_idx]
-
-	# apply displacement to affected branches and associated caps
-	for faceID, d in affected_face_displace.iteritems():
-		cap_points = face_to_cap[faceID]
-		vessel_points = face_to_points[faceID] - set(wall_region)
-
-		for pointID in cap_points.union(vessel_points):
-			cur_pt = wall_model.GetPoints().GetPoint(pointID)
-			new_pt = [r + dr for (r, dr) in zip(cur_pt, d)]
-			wall_model.GetPoints().SetPoint(pointID, new_pt)
+	resolve_branching(wall_model, wall_region, affected_face_displace, face_to_cap, face_to_points)
+	
 
 	# add the expansion norms to the vtk file
 	expand_vtk = nps.numpy_to_vtk(expand_np[0])
