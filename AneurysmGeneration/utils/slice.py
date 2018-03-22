@@ -91,7 +91,7 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None,
 	face_to_points = {faceID:[] for faceID in face_list}
 	cap_to_points = {capID:[] for capID in cap_list}
 
-
+	point_connectivity = {}
 	for i in range(NoC):
 		
 		faceID = wall_model.GetCellData().GetArray('ModelFaceID').GetTuple(i)[0]
@@ -102,6 +102,14 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None,
 
 		elif faceID in face_list:	
 			face_to_points[faceID] += cell_pt_ids
+
+			# store the connectivity data
+			# for c, pointID in enumerate(cell_pt_ids):
+			# 	connected = [cell_pt_id for cell_pt_id in cell_pt_ids if cell_pt_id is not pointID]
+			# 	if pointID in point_connectivity.keys():
+			# 		point_connectivity[pointID] += connected
+			# 	else: 
+			# 		point_connectivity[pointID] = connected
 
 		elif faceID in cap_list:
 			cap_to_points[faceID] += cell_pt_ids
@@ -120,6 +128,9 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None,
 
 	for capID, pointIDs in cap_to_points.iteritems():
 		cap_to_points[capID] = set(pointIDs)
+
+	for pointID, connected in point_connectivity.iteritems():
+		point_connectivity[pointID] = set(connected)
 
 	#	for pointID in pointIDs: 
 	#		point_to_face[pointID].add(faceID)
@@ -140,7 +151,7 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None,
 	print 'done isolating wall sections'
 	print '----------------------------'
 
-	return (face_to_points, cap_to_points, NoP)
+	return (face_to_points, cap_to_points, point_connectivity, NoP)
 
 
 
