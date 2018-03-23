@@ -14,6 +14,7 @@ from utils.interpolation import *
 from utils.normalization import *
 from utils.parser import *
 from utils.slice import *
+from utils.batch import *
 
 
 def obtain_expansion_region(wall, centerline, included_points, start=.1, length=.1, EPSILON=.002):
@@ -70,13 +71,14 @@ def obtain_expansion_region(wall, centerline, included_points, start=.1, length=
 	return (wall_region_id, center_region_id, axial_pos, wall_to_center, start_border, end_border)
 
 
-def resolve_branching(wall_model, wall_region, intersection, affected_face_displace, face_to_cap, face_to_points, point_connectivity):
+def shift_branches(wall_model, wall_region, intersection, affected_face_displace, face_to_cap, face_to_points, point_connectivity, easing):
 	'''
 
 	'''
 
-	print 'Preparing to resolve branching'
+	print 'Preparing to shift branches'
 	print '------------------------------'
+
 	# consolidate affected branch displacements
 	for faceID, displace_list in affected_face_displace.iteritems():
 
@@ -96,10 +98,10 @@ def resolve_branching(wall_model, wall_region, intersection, affected_face_displ
 			new_pt = [r + dr for (r, dr) in zip(cur_pt, displace)]
 			wall_model.GetPoints().SetPoint(pointID, new_pt)
 
+		if easing:
+			branch_easing(wall_model, intersection, vessel_points, point_connectivity)	
 
-	#branch_easing(wall_model, intersection, vessel_points, point_connectivity)	
-
-	print 'Done resolving branching'
+	print 'Done shifting branches'
 	print '------------------------'
 	return 
 
@@ -142,25 +144,38 @@ def branch_easing(wall_model, intersection, vessel_points, point_connectivity, n
 	print '-----------------------'
 
 
-def acquire_start_end(start_border, end_border, wall_model, wall_to_center):
-	start_radii = []
-	end_radii = []
-	for pointID in start_border:
-
-		cur_pt = wall_model.GetPoints().GetPoint(pointID)
-		radial_component = np.linalg.norm([r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ])
-		start_radii.append(radial_component)
-
-	for pointID in end_border:
-		cur_pt = wall_model.GetPoints().GetPoint(pointID)
-		radial_component = np.linalg.norm([r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ])
-		end_radii.append(radial_component)
+def acquire_start_end_radii(start_border, end_border, wall_model, wall_to_center):
+	'''
+		
+	'''
+	start_radii = acquire_radii(start_border, wall_model, wall_to_center)
+	end_radii = acquire_radii(end_border, wall_model, wall_to_center)
 
 	return (start_radii, end_radii)
 
 
+def organize_intersections(wall_region, point_to_face, cur_face):
+	'''
+		Adjusts data strctures to record the pointIDs at the intersection of branching vessels and initialize 
+		storage for the average displacement of the affected faces. 
+	'''
 
-def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face, face_to_cap, point_connectivity, start=.1, length=.1, rad_max = .8):
+	intersect = {}
+	affected_face_set = set()
+
+	for pt in wall_region:
+		belong_faces = point_to_face[pt]
+		if len(belong_faces) > 1:
+			for face in belong_faces: 
+				if face != cur_face:
+					intersect[pt] = face
+					affected_face_set.add(face)
+
+	affected_face_displace = {faceID:[] for faceID in affected_face_set}
+
+	return (affected_face_displace, intersect)
+
+def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face, face_to_cap, point_connectivity, options):
 	'''
 	input: 
 		* name of wall vtp file
@@ -186,28 +201,18 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 
 	included_points = face_to_points[cur_face]
 
+	(start, length, rad_max) = (options[k] for k in ['start', 'length', 'rad_max'])
+
 	wall_region, center_region, axial_pos, wall_to_center, start_border, end_border = obtain_expansion_region(wall_model, 
 																											centerline,
 																											included_points,
 																											start,
 																											length)
 
-	start_radii, end_radii = acquire_start_end(start_border, end_border, wall_model, wall_to_center)
+	start_radii, end_radii = acquire_start_end_radii(start_border, end_border, wall_model, wall_to_center)
 	
-
-	intersect = {}
-	affected_face_set = set()
-
-	for pt in wall_region:
-		belong_faces = point_to_face[pt]
-		if len(belong_faces) > 1:
-			for face in belong_faces: 
-				if face != cur_face:
-					intersect[pt] = face
-					affected_face_set.add(face)
-
-	affected_face_displace = {faceID:[] for faceID in affected_face_set}
-
+	affected_face_displace, intersect = organize_intersections(wall_region, point_to_face, cur_face)
+	
 	expand = interpolated_points(axial_pos, 
 								(min(axial_pos), max(axial_pos)), 
 								rad_shape=[np.median(start_radii), rad_max, np.median(end_radii) ] 
@@ -216,46 +221,64 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 	expand_np = np.zeros((1, wall_model.GetNumberOfPoints() ))
 
 
-
-
-	# for i, pointID in enumerate(wall_region):
-
-	# 	cur_pt = wall_model.GetPoints().GetPoint(pointID)
-	# 	normal = [r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ]
-
-
-	# 	displace = [expand[i]*dn for (r, dn) in zip(cur_pt, normal)]
-	# 	new_pt = [r + dr for (r, dr) in zip(cur_pt, displace)]
-	# 	wall_model.GetPoints().SetPoint(pointID, new_pt)
-
-	# 	# record the displacement for visualization on the np array
-	# 	expand_np[:,pointID] = np.linalg.norm(displace)
-
-	# 	if pointID in intersect.keys():
-	# 		affected_face_displace[intersect[pointID]].append(np.array(displace))
-
 	for i, pointID in enumerate(wall_region):
 
 		cur_pt = wall_model.GetPoints().GetPoint(pointID)
 		normal = [r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ]
-		rad = np.linalg.norm(normal)
 
-	 	normal_unit = [xi/rad for xi in normal]
+		displace = []
+		new_pt = []
 
-		displace = [r*expand[i] for r in normal_unit]
-		new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
+		if options['expansion_mode'] == 'scalar':
+			displace = [expand[i]*dn for (r, dn) in zip(cur_pt, normal)]
+			new_pt = [r + dr for (r, dr) in zip(cur_pt, displace)]
+			
 
+		elif options['expansion_mode'] == 'absolute':
+			rad = np.linalg.norm(normal)
+	 		normal_unit = [xi/rad for xi in normal]
+			displace = [r*expand[i] for r in normal_unit]
+			new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
+
+			# after applying the displacement to the wall points, modify the magnitude of the displacement vector
+			# to accomodate shifting of branches 
+			displace = [d - n for (d, n) in zip (displace, normal)]
+
+
+		# alter the current point's coordinates to reflect expansion
 		wall_model.GetPoints().SetPoint(pointID, new_pt)
 
 		# record the displacement for visualization on the np array
-		displace_mag = np.linalg.norm(displace)
-		expand_np[:,pointID] = displace_mag
+		expand_np[:,pointID] = np.linalg.norm(displace)
 
-		displace_adjusted = [d - n for (d, n) in zip (displace, normal)]
+		# keep track of the displacement vectors affecting branch roots so that we know how much to shift
+		# the branches
 		if pointID in intersect.keys():
-			affected_face_displace[intersect[pointID]].append(np.array(displace_adjusted))
+			affected_face_displace[intersect[pointID]].append(np.array(displace))
 
-	resolve_branching(wall_model, wall_region, intersect.keys(), affected_face_displace, face_to_cap, face_to_points, point_connectivity)
+	# elif options['expansion_mode'] == 'absolute':
+
+	# 	for i, pointID in enumerate(wall_region):
+
+	# 		cur_pt = wall_model.GetPoints().GetPoint(pointID)
+	# 		normal = [r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ]
+	# 		rad = np.linalg.norm(normal)
+
+	# 	 	normal_unit = [xi/rad for xi in normal]
+
+	# 		displace = [r*expand[i] for r in normal_unit]
+	# 		new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
+
+	# 		wall_model.GetPoints().SetPoint(pointID, new_pt)
+
+	# 		# record the displacement for visualization on the np array
+	# 		expand_np[:,pointID] = np.linalg.norm(displace)
+
+	# 		displace_adjusted = [d - n for (d, n) in zip (displace, normal)]
+	# 		if pointID in intersect.keys():
+	# 			affected_face_displace[intersect[pointID]].append(np.array(displace_adjusted))
+
+	shift_branches(wall_model, wall_region, intersect.keys(), affected_face_displace, face_to_cap, face_to_points, point_connectivity, options['easing'])
 	
 
 	# add the expansion norms to the vtk file
@@ -283,6 +306,11 @@ def main():
 	model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
 	wall_name = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/SKD0050_baseline_model.vtp"
 
+	EASING = False;
+
+	options = aggregate_options(start=start, length=length, easing=EASING)
+	print options
+
 	# find the centerline files within the model directory and represent them as np arrays; 
 	# find the names of the centerline files (without the .pth file ending)
 	# note: this matches centerline name to the np array with all the point data
@@ -300,7 +328,7 @@ def main():
 
 	# find the points corresponding to each relevant face ID and each cap ID
 	# note: face_to_points is from faceID to list of pointID
-	face_to_points, cap_to_points, point_connectivity, NoP = wall_isolation(face_list, cap_list, exclude, model_dir=model_dir, wall_name=wall_name)
+	face_to_points, cap_to_points, point_connectivity, NoP = wall_isolation(face_list, cap_list, exclude, model_dir=model_dir, wall_name=wall_name, EASING=EASING)
 
 	# determine the branching structure by looking at intersections of point IDs between face ID designations
 	# determine which caps belong to which faces by looking at intersections
@@ -314,7 +342,7 @@ def main():
 	cur_face = corresponding_faces[cur_name]
 	cur_center = resample_centerline(centers[cur_name])
 	cur_points = face_to_points[cur_face]
-	grow_aneurysm(wall_name, cur_center, cur_face, face_to_points, point_to_face, face_to_cap, point_connectivity, start=start, length=length)
+	grow_aneurysm(wall_name, cur_center, cur_face, face_to_points, point_to_face, face_to_cap, point_connectivity, options)
 
 
 if __name__ == "__main__":

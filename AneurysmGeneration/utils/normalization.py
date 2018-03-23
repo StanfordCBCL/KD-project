@@ -47,6 +47,26 @@ def normalized_centerline(centerline_model):
 
 	return (NoP, normalized, centerline_length)
 
+def acquire_radii(pointIDs, wall_model, wall_to_center):
+	'''
+		Collect the radial component distances from wall points to corresponding centerline points
+
+		input: 
+			* a list, of pointIDs used to identify points on the wlal
+			* a polydata 
+			* a dictionary that returns the closest centerline point for an input pointID
+
+		output: 
+			* a list of L2 norms
+
+	'''
+	radii = []
+	for pointID in pointIDs:
+		cur_pt = wall_model.GetPoints().GetPoint(pointID)
+		radial_component = np.linalg.norm([r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ])
+		radii.append(radial_component)
+
+	return radii
 
 def normalized_centerline_pth(center):
 	'''

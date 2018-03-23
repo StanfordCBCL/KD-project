@@ -51,7 +51,7 @@ def determine_overlap(face_to_points, cap_to_points, NoP):
 	return (point_to_face, face_to_cap)
 
 
-def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None, VALIDATION=True):
+def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None, VALIDATION=True, EASING=False):
 	'''
 
 	input: 
@@ -71,7 +71,7 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None,
 	if model_dir is None:
 		model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
 
-	
+	print "we will be preserving the following faces:"
 	print face_list
 
 	# read in the wall
@@ -84,14 +84,17 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None,
 	NoP = wall_model.GetNumberOfPoints()
 	NoC = wall_model.GetNumberOfCells()
 
-	#record the IDs of points to be removed from consideration
-	# caps = []
-
 	# initialize structures for holding preserved points corresponding to faces, caps
 	face_to_points = {faceID:[] for faceID in face_list}
 	cap_to_points = {capID:[] for capID in cap_list}
 
+
 	point_connectivity = {}
+	
+	if EASING:
+		print "the point connectivity data will be stored"
+
+
 	for i in range(NoC):
 		
 		faceID = wall_model.GetCellData().GetArray('ModelFaceID').GetTuple(i)[0]
@@ -103,24 +106,18 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None,
 		elif faceID in face_list:	
 			face_to_points[faceID] += cell_pt_ids
 
-			# store the connectivity data
-			# for c, pointID in enumerate(cell_pt_ids):
-			# 	connected = [cell_pt_id for cell_pt_id in cell_pt_ids if cell_pt_id is not pointID]
-			# 	if pointID in point_connectivity.keys():
-			# 		point_connectivity[pointID] += connected
-			# 	else: 
-			# 		point_connectivity[pointID] = connected
+			if EASING:
+				# store the connectivity data
+				for c, pointID in enumerate(cell_pt_ids):
+					connected = [cell_pt_id for cell_pt_id in cell_pt_ids if cell_pt_id is not pointID]
+					if pointID in point_connectivity.keys():
+						point_connectivity[pointID] += connected
+					else: 
+						point_connectivity[pointID] = connected
 
 		elif faceID in cap_list:
 			cap_to_points[faceID] += cell_pt_ids
 		
-
-	# perform set operations to remove duplicates 
-	# removed = set(removed)
-	# preserved = set(xrange(NoP)) - removed
-
-	# prepare a pointID -> faceID correspondence
-	# point_to_face = {pointID:set() for pointID in preserved}
 
 	# do a prelim processing 
 	for faceID, pointIDs in face_to_points.iteritems():
@@ -129,11 +126,9 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None,
 	for capID, pointIDs in cap_to_points.iteritems():
 		cap_to_points[capID] = set(pointIDs)
 
+
 	for pointID, connected in point_connectivity.iteritems():
 		point_connectivity[pointID] = set(connected)
-
-	#	for pointID in pointIDs: 
-	#		point_to_face[pointID].add(faceID)
 
 	
 
