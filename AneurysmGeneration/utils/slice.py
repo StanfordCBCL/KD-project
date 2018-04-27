@@ -55,8 +55,12 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None,
 	'''
 
 	input: 
-		* directory where the model files are
-		* name of the model wall 
+		* face_list, a list of faces in the model (as ID #)
+		* cap_list, a list of caps in the model (as ID #) 
+		* exclude, a list of faces to exclude from the model (as ID #) 
+		* model_dir, directory where the model files are
+		* wall_name, name of the model wall 
+		* VALIDATION, which should be included 
 
 	output: 
 		* dictionary that maps face_id to set of point IDs belonging to that face
@@ -145,6 +149,10 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None,
 
 	print 'done isolating wall sections'
 	print '----------------------------'
+
+	if EASING:
+		print 'done collecting point connectivity'
+		print '----------------------------'
 
 	return (face_to_points, cap_to_points, point_connectivity, NoP)
 

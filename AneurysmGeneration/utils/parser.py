@@ -56,19 +56,19 @@ def parse_facenames(names, model_dir, inputFileName="SKD0050_baseline_model.vtp.
 
 def parse_commandline():
 
-	parser = argparse.ArgumentParser(description='lol')
-	parser.add_argument('--iF', action="store")
-	parser.add_argument('--kB', action="store", type=float, default=40000.0)
-	parser.add_argument('--kN', action="store", type=float, default=400.0)
-	parser.add_argument('--nbCutoff', action="store", type=float, default=0.50)
-	parser.add_argument('--m', action="store", type=float, default=12.0)
-	parser.add_argument('--dt', action="store", type=float, default=.001)
-	parser.add_argument('--n', action="store", type=int, default=1000)
-	parser.add_argument('--out', action="store", default=None ) 
+	# parser = argparse.ArgumentParser(description='lol')
+	# parser.add_argument('--iF', action="store")
+	# parser.add_argument('--kB', action="store", type=float, default=40000.0)
+	# parser.add_argument('--kN', action="store", type=float, default=400.0)
+	# parser.add_argument('--nbCutoff', action="store", type=float, default=0.50)
+	# parser.add_argument('--m', action="store", type=float, default=12.0)
+	# parser.add_argument('--dt', action="store", type=float, default=.001)
+	# parser.add_argument('--n', action="store", type=int, default=1000)
+	# parser.add_argument('--out', action="store", default=None ) 
 	
-	args = vars(parser.parse_args())
+	# args = vars(parser.parse_args())
 	
-	if args['out'] == None: args['out'] = args['iF'][:-4]
+	# if args['out'] == None: args['out'] = args['iF'][:-4]
 
 	return args
 
