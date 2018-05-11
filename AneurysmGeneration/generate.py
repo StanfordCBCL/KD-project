@@ -306,7 +306,9 @@ def main():
 	model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
 	wall_name = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/SKD0050_baseline_model.vtp"
 
-	EASING = False;
+	EASING = True
+	PICKLE = True
+	FROM_PICKLE = True
 
 	options = aggregate_options(start=start, length=length, easing=EASING)
 	print options
@@ -328,7 +330,24 @@ def main():
 
 	# find the points corresponding to each relevant face ID and each cap ID
 	# note: face_to_points is from faceID to list of pointID
-	face_to_points, cap_to_points, point_connectivity, NoP = wall_isolation(face_list, cap_list, exclude, model_dir=model_dir, wall_name=wall_name, EASING=EASING)
+	face_to_points = None
+	cap_to_points = None
+	point_connectivity = None
+	NoP = 0
+	if FROM_PICKLE != True:
+		print 'computing structures from scratch'
+		print '---------------------------------'
+		face_to_points, cap_to_points, point_connectivity, NoP = wall_isolation(face_list, cap_list, exclude, model_dir=model_dir, wall_name=wall_name, EASING=EASING)
+	else:
+		print 'reading structures from pickle'
+		print '------------------------------'
+		(face_to_points, cap_to_points, point_connectivity, NoP) = read_from_file("big_boy")
+
+	if PICKLE:
+		print 'writing structures to pickle'
+		print '----------------------------'
+		write_to_file("big_boy", (face_to_points, cap_to_points, point_connectivity, NoP))
+
 
 	# determine the branching structure by looking at intersections of point IDs between face ID designations
 	# determine which caps belong to which faces by looking at intersections
