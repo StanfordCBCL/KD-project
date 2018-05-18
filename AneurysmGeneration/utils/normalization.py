@@ -125,6 +125,9 @@ def projection(wall, centerline, included_points):
 	NoP_wall = wall.GetNumberOfPoints()
 	NoP_center, normalized_center, centerline_length = normalized_centerline_pth(centerline)
 
+	print '----     centerline length:   -------'
+	print '----     ', centerline_length
+	print '-------------------------------------'
 	normalized_wall = np.zeros((NoP_wall))
 
 	wall_to_center = {}
@@ -145,6 +148,6 @@ def projection(wall, centerline, included_points):
 
 		wall_to_center[i] = centerline[min_idx]
 
-	return (normalized_wall, normalized_center, wall_to_center)
+	return (normalized_wall, normalized_center, wall_to_center,  centerline_length)
 
 

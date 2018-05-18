@@ -84,6 +84,7 @@ def resample_centerline(centerline, length=None):
 	s=0.01 	# smoothness parameter
 	k=3 	# spline order
 	nest=-1 # estimate of number of knots needed (-1 = maximal)
+	nSpoints_factor = 30
 
 	centerline = np.transpose(centerline)
 
@@ -95,7 +96,9 @@ def resample_centerline(centerline, length=None):
 
 	if length is None:
 		length = len(centerline[0])
-	nSpoints = length*20
+	nSpoints = length*30
+
+	print '-----   the number of spline points is ', nSpoints
 
 	# evaluate spline, including interpolated points
 	xs,ys,zs = interpolate.splev(np.linspace(0,1,nSpoints),tckp)
