@@ -9,13 +9,14 @@ import numpy as np
 import vtk
 from vtk.util import numpy_support as nps 
 
-
+from mpl_toolkits.mplot3d import Axes3D
 from utils.interpolation import *
 from utils.normalization import *
 from utils.parser import *
 from utils.slice import *
 from utils.batch import *
 from utils.branch_ops import *
+
 
 def obtain_expansion_region(wall, centerline, included_points, start=.1, length=.1, EPSILON=.002):
 	'''
@@ -85,7 +86,9 @@ def acquire_start_end_radii(start_border, end_border, wall_model, wall_to_center
 
 
 
-def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face, face_to_cap, point_connectivity, options):
+def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_connectivity, cur_face, centerline, start, length, rad_max, easing, expansion_mode, suffix):
+
+#def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face, face_to_cap, point_connectivity, options):
 	'''
 	input: 
 		* name of wall vtp file
@@ -103,15 +106,12 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 	print 'Preparing to grow aneurysm'
 	print '--------------------------'
 
-
 	wallreader = vtk.vtkXMLPolyDataReader()
 	wallreader.SetFileName(wall_name)
 	wallreader.Update()
 	wall_model = wallreader.GetOutput()
 
 	included_points = face_to_points[cur_face]
-
-	(start, length, rad_max) = (options[k] for k in ['start', 'length', 'rad_max'])
 
 	wall_region, center_region, axial_pos, normalized_wall, wall_to_center, start_border, end_border = obtain_expansion_region(wall_model, 
 																											centerline,
@@ -139,12 +139,12 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 		displace = []
 		new_pt = []
 
-		if options['expansion_mode'] == 'scalar':
+		if expansion_mode == 'scalar':
 			displace = [expand[i]*dn for (r, dn) in zip(cur_pt, normal)]
 			new_pt = [r + dr for (r, dr) in zip(cur_pt, displace)]
 			
 
-		elif options['expansion_mode'] == 'absolute':
+		elif expansion_mode == 'absolute':
 
 			if pointID in start_border:
 				continue
@@ -173,7 +173,7 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 
 	print '>>>  the maximum displacement: ', np.max(expand_np)
 
-	shift_branches(wall_model, wall_region, intersect.keys(), affected_face_displace, face_to_cap, face_to_points, point_connectivity, options['easing'])
+	shift_branches(wall_model, wall_region, intersect.keys(), affected_face_displace, face_to_cap, face_to_points, point_connectivity, easing)
 	
 
 	# add the expansion norms to the vtk file
@@ -189,7 +189,7 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 	# write out the final vtk file
 	new = vtk.vtkXMLPolyDataWriter()
 	new.SetInputData(wall_model)
-	new.SetFileName(wall_name[:-4] + '_modified.vtp')
+	new.SetFileName(wall_name[:-4] + '_modified_' + suffix + '.vtp')
 	new.Write()
 
 
@@ -200,26 +200,32 @@ def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face
 def main():
 
 
-	start = .4
-	length = 1.3068
-	rad_max = .6534/2
-
 	# define the location of models, centerlines, metadata and specify the wall_name
 	model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
 	wall_name = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/SKD0050_baseline_model.vtp"
 
+	# some options 
 	EASING = True
+
 	PICKLE = False
 	FROM_PICKLE = True
 
-	options = aggregate_options(start=start, length=length, rad_max =rad_max, easing=EASING)
-	print options
+	BATCH = True
 
 	# find the centerline files within the model directory and represent them as np arrays; 
 	# find the names of the centerline files (without the .pth file ending)
 	# note: this matches centerline name to the np array with all the point data
 	centers, names = gather_centerlines(model_dir)
+	resampled = [resample_centerline(centers[name]) for name in names]
 
+	# fig = plt.figure()
+	# ax = fig.add_subplot(111, projection='3d')
+	# for centerline in resampled:
+	# 	ax.scatter(centerline[:,0], centerline[:,1], centerline[:,2])
+
+	# plt.show()
+
+	
 	# find the face IDs assigned to the cells in the model corresponding to the centerline names in the directory
 	# note: this matches centerline name against its faceID 
 	corresponding_faces, face_list = parse_facenames(names, model_dir)
@@ -261,12 +267,24 @@ def main():
 	# to do this, we input the set of centerline points as an np array of [xyz] and 
 	# the set of pointIDs corresponding to the right wall region
 	# 
-	cur_name = names[2]
-	cur_face = corresponding_faces[cur_name]
-	cur_center = resample_centerline(centers[cur_name])
-	cur_points = face_to_points[cur_face]
-	grow_aneurysm(wall_name, cur_center, cur_face, face_to_points, point_to_face, face_to_cap, point_connectivity, options)
 
+	options = batch_targets(names, corresponding_faces, resampled, BATCH, EASING)
+	print names
+	print corresponding_faces
+
+	for option in options: 
+
+		print option
+
+		grow_aneurysm(
+			wall_name, 
+			face_to_points, 
+			point_to_face, 
+			face_to_cap, 
+			point_connectivity, 
+			**option)
+
+	
 
 if __name__ == "__main__":
 
