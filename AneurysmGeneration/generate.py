@@ -36,7 +36,10 @@ def obtain_expansion_region(wall, centerline, included_points, start=.1, length=
 	print 'Obtaining the expansion region'
 	print '------------------------------'
 	# project wall points to closest centerline point 
-	normalized_wall, normalized_center, wall_to_center, centerline_length = projection(wall, centerline, included_points)
+	wall_ref, normalized_center, wall_to_center, centerline_length = projection(wall, centerline, included_points)
+
+	wall_ref_axial = wall_ref[:, 0]
+	wall_ref_theta = wall_ref[:, 1]
 
 	# compute the normalized length 
 	length_frac = length/centerline_length
@@ -44,6 +47,7 @@ def obtain_expansion_region(wall, centerline, included_points, start=.1, length=
 	# initialize datastructures
 	wall_region_id = []
 	axial_pos = []
+	theta_pos = []
 	center_region_id = []	
 	start_border = []
 	end_border = []
@@ -53,12 +57,15 @@ def obtain_expansion_region(wall, centerline, included_points, start=.1, length=
 
 	# find the wall points projected into the desired centerline region
 	for i in included_points:
-		if (normalized_wall[i] >= start) and (normalized_wall[i] <= start + length_frac): 
+		if (wall_ref_axial[i] >= start) and (wall_ref_axial[i] <= start + length_frac): 
 			wall_region_id.append(i)
-			axial_pos.append(normalized_wall[i])
-			if normalized_wall[i] < start + EPSILON:
+
+			axial_pos.append(wall_ref_axial[i])
+			theta_pos.append(wall_ref_theta[i])
+
+			if wall_ref_axial[i] < start + EPSILON:
 				start_border.append(i)
-			if normalized_wall[i] > start + length_frac - EPSILON:
+			if wall_ref_axial[i] > start + length_frac - EPSILON:
 				end_border.append(i)
 
 	# report the number of border points identified:
@@ -72,7 +79,7 @@ def obtain_expansion_region(wall, centerline, included_points, start=.1, length=
 
 	print 'Done obtaining the expansion region'
 	print '-----------------------------------'
-	return (wall_region_id, center_region_id, axial_pos, normalized_wall, wall_to_center, start_border, end_border)
+	return (wall_region_id, center_region_id, axial_pos, theta_pos, wall_ref, wall_to_center, start_border, end_border)
 
 
 def acquire_start_end_radii(start_border, end_border, wall_model, wall_to_center):
@@ -113,7 +120,8 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 	included_points = face_to_points[cur_face]
 
-	wall_region, center_region, axial_pos, normalized_wall, wall_to_center, start_border, end_border = obtain_expansion_region(wall_model, 
+	wall_region, center_region, axial_pos, theta_pos, wall_ref, wall_to_center, start_border, end_border = obtain_expansion_region(
+																											wall_model, 
 																											centerline,
 																											included_points,
 																											start,
@@ -182,10 +190,16 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	expand_vtk.SetName('expand norm')
 	wall_model.GetPointData().AddArray(expand_vtk)
 
-	# add the normalized wall array to the vtk file 
-	norm_wall_vtk = nps.numpy_to_vtk(normalized_wall)
+	wall_ref_transpose = np.transpose(wall_ref).copy()
+	# add the normalized axial position wall array to the vtk file 
+	norm_wall_vtk = nps.numpy_to_vtk(wall_ref_transpose[0, :])
 	norm_wall_vtk.SetName('axial pos')
 	wall_model.GetPointData().AddArray(norm_wall_vtk)
+
+	# add the normalized theta position wall array to the vtk file
+	theta_wall_vtk = nps.numpy_to_vtk(wall_ref_transpose[1, :])
+	theta_wall_vtk.SetName('theta')
+	wall_model.GetPointData().AddArray(theta_wall_vtk)
 
 	# write out the final vtk file
 	new = vtk.vtkXMLPolyDataWriter()
@@ -230,6 +244,7 @@ def main():
 			center = centers[name]
 			ax.scatter(center[:,0], center[:,1], center[:,2])
 		plt.show()
+	
 	'''
 	
 	# find the face IDs assigned to the cells in the model corresponding to the centerline names in the directory
@@ -291,7 +306,7 @@ def main():
 			**option)
 
 	
-
+	
 if __name__ == "__main__":
 
 	main()

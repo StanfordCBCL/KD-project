@@ -47,6 +47,7 @@ def normalized_centerline(centerline_model):
 
 	return (NoP, normalized, centerline_length)
 
+
 def acquire_radii(pointIDs, wall_model, wall_to_center):
 	'''
 		Collect the radial component distances from wall points to corresponding centerline points
@@ -67,6 +68,7 @@ def acquire_radii(pointIDs, wall_model, wall_to_center):
 		radii.append(radial_component)
 
 	return radii
+
 
 def normalized_centerline_pth(center):
 	'''
@@ -101,7 +103,14 @@ def normalized_centerline_pth(center):
 
 	return (NoP, normalized, centerline_length)
 
+
 def compute_reference_norm(centerline):
+	'''
+		input: 
+			* centerline
+		output: 
+			* 
+	'''
 
 	NoP = centerline.shape[0]
 	p0 = np.roll(centerline, shift = -1, axis= 1)
@@ -115,7 +124,34 @@ def compute_reference_norm(centerline):
 	t10_normed = np.divide(t10, np.linalg.norm(t10, axis=1).reshape(NoP, 1))
 
 	n1 = t21_normed - t10_normed
-	return np.divide(n1, np.linalg.norm(n1, axis=1).reshape(NoP, 1))
+	return (np.divide(n1, np.linalg.norm(n1, axis=1).reshape(NoP, 1)), t21)
+
+
+def compute_theta(r, n, t):
+	'''
+		input: 
+			* r, a vector from centerline point to wall point
+			* n, the centerline's normal vector at the centerline point corresponding to the wall point
+			* t, the tangent vector corresponding to that centerline point
+		output: 
+			* theta, the angle between the two vectors in [-pi, pi]
+	'''
+	# precompute some stuff
+	mag_r = np.linalg.norm(r)
+	mag_n = np.linalg.norm(n)
+
+	# compute cos
+	cos_rn = np.dot(r, n)/mag_r/mag_n
+
+	# compute sin 
+	cx = np.cross(r, n)
+	sin_rn = np.sign(np.dot(cx, t))*np.linalg.norm(cx)/mag_r/mag_n 
+
+	# returning arctan 
+	arctan_rn = np.arctan2(sin_rn, cos_rn)
+
+	return arctan_rn
+
 
 def projection(wall, centerline, included_points):
 	'''
@@ -137,17 +173,24 @@ def projection(wall, centerline, included_points):
 
 	print 'projecting wall points onto the centerline'
 	print '------------------------------------------'
+
+
 	NoP_wall = wall.GetNumberOfPoints()
 	NoP_center, normalized_center, centerline_length = normalized_centerline_pth(centerline)
-	reference_norms = compute_reference_norm(normalized_center)
+	
 
 	print '----     centerline length:   -------'
 	print '----     ', centerline_length, '     -----'
 	print '-------------------------------------'
-	normalized_wall = np.zeros((NoP_wall))
+
+	# compute the angular reference positions
+	reference_norms, reference_tangents = compute_reference_norm(centerline)
+
+	# initialize wall axial pos
+	transformed_wall_ref = np.zeros((NoP_wall, 2))
 
 	wall_to_center = {}
-	wall_to_norm = {}
+	wall_to_norm = {} #actually not sure if i need this
 
 	for i in included_points:
 		wall_pt = wall.GetPoints().GetPoint(i)
@@ -161,10 +204,14 @@ def projection(wall, centerline, included_points):
 				min_dist = cur_dist
 				min_idx = k
 
-		normalized_wall[i] = normalized_center[min_idx]
+		transformed_wall_ref[i,0] = normalized_center[min_idx]
+		r = np.array(wall_pt) - centerline[min_idx]
+		n = reference_norms[min_idx]
+		t = reference_tangents[min_idx]
+		transformed_wall_ref[i, 1] = compute_theta(r, n, t)
 
 		wall_to_center[i] = centerline[min_idx]
 
-	return (normalized_wall, normalized_center, wall_to_center,  centerline_length)
+	return (transformed_wall_ref, normalized_center, wall_to_center,  centerline_length)
 
 
