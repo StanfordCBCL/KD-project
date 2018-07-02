@@ -101,6 +101,21 @@ def normalized_centerline_pth(center):
 
 	return (NoP, normalized, centerline_length)
 
+def compute_reference_norm(centerline):
+
+	NoP = centerline.shape[0]
+	p0 = np.roll(centerline, shift = -1, axis= 1)
+	p1 = np.roll(centerline, shift = 0, axis = 1)
+	p2 = np.roll(centerline, shift = 1, axis = 1)
+
+	t21 = p2 - p1
+	t21_normed = np.divide(t21, np.linalg.norm(t21, axis=1).reshape(NoP, 1))
+
+	t10 = p1 - p0
+	t10_normed = np.divide(t10, np.linalg.norm(t10, axis=1).reshape(NoP, 1))
+
+	n1 = t21_normed - t10_normed
+	return np.divide(n1, np.linalg.norm(n1, axis=1).reshape(NoP, 1))
 
 def projection(wall, centerline, included_points):
 	'''
@@ -124,13 +139,15 @@ def projection(wall, centerline, included_points):
 	print '------------------------------------------'
 	NoP_wall = wall.GetNumberOfPoints()
 	NoP_center, normalized_center, centerline_length = normalized_centerline_pth(centerline)
+	reference_norms = compute_reference_norm(normalized_center)
 
 	print '----     centerline length:   -------'
-	print '----     ', centerline_length
+	print '----     ', centerline_length, '     -----'
 	print '-------------------------------------'
 	normalized_wall = np.zeros((NoP_wall))
 
 	wall_to_center = {}
+	wall_to_norm = {}
 
 	for i in included_points:
 		wall_pt = wall.GetPoints().GetPoint(i)

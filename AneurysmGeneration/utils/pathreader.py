@@ -8,6 +8,11 @@ import xml.etree.ElementTree as ET
 import re 
 import numpy as np
 import vtk
+#from parser import *
+from interpolation import *
+from normalization import *
+from vtk.util import numpy_support as nps 
+
 
 def read_centerline(path_name):
 	'''
@@ -45,9 +50,32 @@ if __name__ == "__main__":
 	print "testing pathreader.py"
 	print "---------------------"
 
-	file_loc = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
-	file_name = "lad.pth"
+	model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
+	centers, names = gather_centerlines(model_dir)
+	resampled = [resample_centerline(centers[name]) for name in names]
 
-	read_centerline(file_loc + file_name)
+	print compute_reference_norm(resampled[0])
+
+	'''
+	for c, name in enumerate(names):
+		cl = resampled[c]
+		print cl.shape
+		points = vtk.vtkPoints()
+
+		for idx in range(cl.shape[0]):
+			points.InsertNextPoint(cl[idx, :])
+
+		#points.SetScalars(np.arange(cl.shape[0]))
+		polyData = vtk.vtkPolyData()
+		polyData.SetPoints(points)
+		polyData.GetPointData().SetScalars(nps.numpy_to_vtk(np.arange(cl.shape[0])))
+
+		new = vtk.vtkXMLPolyDataWriter()
+		new.SetInputData(polyData)
+		new.SetFileName('exist_' + name + '_cl' + '.vtp')
+		new.Write()
+
+	'''
+	#read_centerline(file_loc + file_name)
 
 

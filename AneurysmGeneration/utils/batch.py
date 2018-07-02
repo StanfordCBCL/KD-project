@@ -55,6 +55,13 @@ def read_targets(fname='targets.txt'):
 
 	return targets
 
+def write_target_facenames(target_facename, target_suffix_list):
+	'''
+	'''
+
+	return
+
+
 def batch_targets(names, corresponding_faces, resampled, batch_status, easing):
 	'''
 

@@ -61,7 +61,7 @@ def obtain_expansion_region(wall, centerline, included_points, start=.1, length=
 			if normalized_wall[i] > start + length_frac - EPSILON:
 				end_border.append(i)
 
-	# report the number of border poitns identified:
+	# report the number of border points identified:
 	print 'the number of points in the start border: ', len(start_border)
 	print 'the number of points in the end border: ', len(end_border)
 
@@ -134,7 +134,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	for i, pointID in enumerate(wall_region):
 
 		cur_pt = wall_model.GetPoints().GetPoint(pointID)
-		normal = [r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ]
+		wall_normal = [r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ]
 
 		displace = []
 		new_pt = []
@@ -146,17 +146,18 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 		elif expansion_mode == 'absolute':
 
-			if pointID in start_border:
-				continue
+			# if pointID in start_border:
+			# 	print 'skipping a start point'
+			# 	continue
 
-			rad = np.linalg.norm(normal)
-	 		normal_unit = [xi/rad for xi in normal]
-			displace = [r*expand[i] for r in normal_unit]
+			rad = np.linalg.norm(wall_normal)
+	 		wall_unit = [xi/rad for xi in wall_normal]
+			displace = [r*expand[i] for r in wall_unit]
 			new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
 
 			# after applying the displacement to the wall points, modify the magnitude of the displacement vector
 			# to accomodate shifting of branches 
-			displace_adjusted = [d - n for (d, n) in zip (displace, normal)]
+			displace_adjusted = [d - n for (d, n) in zip (displace, wall_normal)]
 
 
 		# alter the current point's coordinates to reflect expansion
@@ -206,11 +207,10 @@ def main():
 
 	# some options 
 	EASING = True
-
 	PICKLE = False
 	FROM_PICKLE = True
-
 	BATCH = True
+	PLOT_CL = True
 
 	# find the centerline files within the model directory and represent them as np arrays; 
 	# find the names of the centerline files (without the .pth file ending)
@@ -218,13 +218,19 @@ def main():
 	centers, names = gather_centerlines(model_dir)
 	resampled = [resample_centerline(centers[name]) for name in names]
 
-	# fig = plt.figure()
-	# ax = fig.add_subplot(111, projection='3d')
-	# for centerline in resampled:
-	# 	ax.scatter(centerline[:,0], centerline[:,1], centerline[:,2])
 
-	# plt.show()
-
+	# some random code for plotting the centerlines 
+	'''
+	if PLOT_CL:
+		fig = plt.figure()
+		ax = fig.add_subplot(111, projection='3d')
+		for centerline in resampled:
+			ax.scatter(centerline[:,0], centerline[:,1], centerline[:,2])
+		for name in names:
+			center = centers[name]
+			ax.scatter(center[:,0], center[:,1], center[:,2])
+		plt.show()
+	'''
 	
 	# find the face IDs assigned to the cells in the model corresponding to the centerline names in the directory
 	# note: this matches centerline name against its faceID 
