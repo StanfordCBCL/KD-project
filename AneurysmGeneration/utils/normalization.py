@@ -9,7 +9,6 @@
 import numpy as np
 import vtk 
 
-
 def normalized_centerline(centerline_model):
 	'''
 	input: 
@@ -161,9 +160,10 @@ def projection(wall, centerline, included_points):
 			* included_points, the list of point IDs for the vessel wall we are considering
 
 		output:
-			* list of normalized centerpoint position for each wall point 
-			* list of normalized centerpoint positions 
-			* dictionary of correspondences between wall point index -> closest centerpoint
+			* transformed_wall_ref, a np array of shape (NoP, 2) representing (axial pos, theta) for each point on the wall
+			* normalized_center, a list of normalized centerpoint positions 
+			* wall_to_center, dictionary of correspondences between wall point index -> closest centerpoint
+			* centerline_length, the lenght of the centerline
 
 		For each wall point, go through all the centerline points and find the closest one. 
 
@@ -190,7 +190,7 @@ def projection(wall, centerline, included_points):
 	transformed_wall_ref = np.zeros((NoP_wall, 2))
 
 	wall_to_center = {}
-	wall_to_norm = {} #actually not sure if i need this
+	min_dists = np.zeros((NoP_wall, 1))
 
 	for i in included_points:
 		wall_pt = wall.GetPoints().GetPoint(i)
@@ -204,14 +204,16 @@ def projection(wall, centerline, included_points):
 				min_dist = cur_dist
 				min_idx = k
 
-		transformed_wall_ref[i,0] = normalized_center[min_idx]
 		r = np.array(wall_pt) - centerline[min_idx]
 		n = reference_norms[min_idx]
 		t = reference_tangents[min_idx]
-		transformed_wall_ref[i, 1] = compute_theta(r, n, t)
+		transformed_wall_ref[i] = normalized_center[min_idx], compute_theta(r, n, t)
+#		transformed_wall_ref[i, 1] = compute_theta(r, n, t)
 
 		wall_to_center[i] = centerline[min_idx]
+		min_dists[i] = min_dist
 
-	return (transformed_wall_ref, normalized_center, wall_to_center,  centerline_length)
+	return (transformed_wall_ref, normalized_center, wall_to_center, min_dists, centerline_length)
+
 
 

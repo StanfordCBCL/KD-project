@@ -19,6 +19,9 @@ def write_to_file(name, obj):
 	'''
 		Write object of specified name to a pickle file 
 	'''
+
+	print 'writing structures to pickle'
+	print '----------------------------'
 	path = 'pickles/' + name + '.pkl'
 	file = open(path, 'wb')
 	pickle.dump(obj, file)
@@ -29,6 +32,9 @@ def read_from_file(name):
 	'''
 		Return loaded object given by input name
 	'''
+	print 'reading structures from pickle'
+	print '------------------------------'
+
 	path = 'pickles/' + name + '.pkl'
 	file = open(path, 'rb')
 	new_obj = pickle.load(file)

@@ -10,7 +10,7 @@ import numpy as np
 import vtk
 #from parser import *
 from interpolation import *
-from normalization import *
+# from normalization import *
 from vtk.util import numpy_support as nps 
 
 

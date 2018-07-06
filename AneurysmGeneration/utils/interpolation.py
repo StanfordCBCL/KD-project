@@ -11,7 +11,9 @@
 import numpy as np
 from scipy import interpolate
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from pathreader import *
+from batch import read_from_file
 
 def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='cubic_clamped'):
 
@@ -76,6 +78,62 @@ def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='cubi
 	return interpolated
 
 
+def interpolation_2d(start_coords, end_coords, start_values, end_values, new_points, start, length, template=None, rad_max=.03, interp_type='cubic'):
+	'''
+
+	'''
+
+	print 'interpolating points w/ 2D'
+	print '------------------------'
+
+
+	vals = []
+	if template is None:
+		template = []
+		rad_shape = []
+		shape = [#.5*(np.mean(start_values) + rad_max), 
+				 rad_max, 
+				 #.5*(np.mean(end_values)+ rad_max)
+				 ]
+
+		for c, ax_pos in enumerate([.5]):
+			theta_divisions = 25
+			for k in np.arange(-1.1, 1.1, 2.2/theta_divisions):
+				template.append([ start + ax_pos*length, k*np.pi])
+				vals.append(shape[c])
+
+		for (s, theta), r0 in zip(start_coords, start_values):
+			template.append([s+.25*length, theta])
+			vals.append(.5*(r0 + rad_max))
+		for (s, theta), r0 in zip(end_coords, end_values):
+			template.append([s-.25*length, theta])
+			vals.append(.5*(r0 + rad_max))
+		# for ax_pos in [.5*(end + start)]:
+		# 	for k in range(-3, 3, 1):
+		# 		print ax_pos
+		# 		template.append([ax_pos, k*np.pi/4])
+		# 		vals.append(rad_max)
+
+	#print np.array(vals).reshape(len(vals), 1)
+	template = np.concatenate((np.array(template), start_coords, end_coords))
+	vals = np.concatenate((np.reshape(np.array(vals), (len(vals), 1)), start_values, end_values))
+
+	# interpolated = interpolate.griddata(template, vals, new_points, method=interp_type)
+	rbf = interpolate.Rbf(template[:,0], template[:,1], vals, function='multiquadric')
+	interpolated = rbf(new_points[:,0], new_points[:,1])
+	print interpolated
+
+
+	fig = plt.figure()
+	ax = fig.add_subplot(111, projection='3d')
+
+	ax.scatter(new_points[:,0], new_points[:, 1], interpolated, marker='.')
+	ax.scatter(template[:,0], template[:,1], vals)
+	#plt.scatter(new_points[:,0], new_points[:, 1], marker='.')
+	#plt.scatter(template[:,0], template[:, 1], marker='o')
+	plt.show()
+	return interpolated
+
 def resample_centerline(centerline, length=None):
 
 	print 'trying to resample centerline'
@@ -111,6 +169,20 @@ def resample_centerline(centerline, length=None):
 
 if __name__ == "__main__":
 
+	print 'testing 2d interpolation'
+
+	start_border = read_from_file('start_border')
+	end_border = read_from_file('end_border')
+
+	start_radii = read_from_file('start_radii')
+	end_radii = read_from_file('end_radii')
+
+	new_points = read_from_file('new_points')
+	start, end = read_from_file('start_end')
+
+
+	interpolation_2d(start_border, end_border, start_radii, end_radii, new_points, start, end-start)
+
 	# print 'testing interpolation'
 	# print '---------------------'
 
@@ -122,14 +194,16 @@ if __name__ == "__main__":
 
 
 
-	print 'testing resample_centerline'
-	print '---------------------'
+	# print 'testing resample_centerline'
+	# print '---------------------'
 
-	c_path = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/wall_lca1.pth"
+	# c_path = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/wall_lca1.pth"
 
-	centerline = np.transpose(read_centerline(c_path))
+	# centerline = np.transpose(read_centerline(c_path))
 
-	print centerline
-	lol = resample_centerline(centerline)
+	# print centerline
+	# lol = resample_centerline(centerline)
 	
-	print lol
+	# print lol
+
+

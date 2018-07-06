@@ -7,7 +7,7 @@ import vtk
 from parser import *
 from pathreader import read_centerline
 from normalization import normalized_centerline_pth
-
+from batch import write_to_file
 
 def determine_overlap(face_to_points, cap_to_points, NoP):
 	'''
@@ -51,7 +51,7 @@ def determine_overlap(face_to_points, cap_to_points, NoP):
 	return (point_to_face, face_to_cap)
 
 
-def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None, VALIDATION=True, EASING=False):
+def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_model=None, VALIDATION=True, EASING=False, PICKLE=False):
 	'''
 
 	input: 
@@ -66,23 +66,22 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None,
 		* dictionary that maps face_id to set of point IDs belonging to that face
 	'''
 
-	print "isolating wall sections"
-	print "________________"
+	print 'computing structures from scratch: isolating wall sections'
+	print '----------------------------------------------------------'
 
 	# designate directories 
-	if wall_name is None:
+	if wall_model is None:
 		wall_name = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/SKD0050_baseline_model.vtp"
+		wallreader = vtk.vtkXMLPolyDataReader()
+		wallreader.SetFileName(wall_name)
+		wallreader.Update()
+		wall_model = wallreader.GetOutput()
+
 	if model_dir is None:
 		model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
 
 	print "we will be preserving the following faces:"
 	print face_list
-
-	# read in the wall
-	wallreader = vtk.vtkXMLPolyDataReader()
-	wallreader.SetFileName(wall_name)
-	wallreader.Update()
-	wall_model = wallreader.GetOutput()
 
 	# get iteration boundaries
 	NoP = wall_model.GetNumberOfPoints()
@@ -134,25 +133,19 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_name=None,
 	for pointID, connected in point_connectivity.iteritems():
 		point_connectivity[pointID] = set(connected)
 
-	
+	if EASING:
+		print 'done collecting point connectivity'
+		print '----------------------------'
 
-	# if VALIDATION:
-	# 	# confirm that we haven't lost or created new points
-	# 	print len(removed), NoP, len(nonAortaPts)
 
-	# 	# confirm that our dictionary no longer contains duplicates
-	# 	c = 0
-	# 	for k, v in face_to_points.iteritems():
-	# 		print len(v)
-	# 		c += len(v)
-	# 	print c 
+
 
 	print 'done isolating wall sections'
 	print '----------------------------'
 
-	if EASING:
-		print 'done collecting point connectivity'
-		print '----------------------------'
+	if PICKLE:
+		write_to_file("big_boy", (face_to_points, cap_to_points, point_connectivity, NoP))
+	
 
 	return (face_to_points, cap_to_points, point_connectivity, NoP)
 

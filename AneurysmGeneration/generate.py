@@ -18,7 +18,7 @@ from utils.batch import *
 from utils.branch_ops import *
 
 
-def obtain_expansion_region(wall, centerline, included_points, start=.1, length=.1, EPSILON=.002):
+def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.2, EPSILON=.01):
 	'''
 	input: 
 		* wall vtk polydata
@@ -36,50 +36,66 @@ def obtain_expansion_region(wall, centerline, included_points, start=.1, length=
 	print 'Obtaining the expansion region'
 	print '------------------------------'
 	# project wall points to closest centerline point 
-	wall_ref, normalized_center, wall_to_center, centerline_length = projection(wall, centerline, included_points)
+	
 
 	wall_ref_axial = wall_ref[:, 0]
 	wall_ref_theta = wall_ref[:, 1]
 
-	# compute the normalized length 
-	length_frac = length/centerline_length
+	
 
 	# initialize datastructures
 	wall_region_id = []
+	start_id = []
+	end_id = []
+
 	axial_pos = []
 	theta_pos = []
-	center_region_id = []	
-	start_border = []
-	end_border = []
+	#center_region_id = []
+
+	#start_border = []
+	#end_border = []
+
 	# determine how many points to iterate over
-	NoP_wall = wall.GetNumberOfPoints()
-	NoP_center = len(centerline)
+	# 
+	# NoP_center = len(centerline)
 
 	# find the wall points projected into the desired centerline region
+
+	# consider switching this for np.where in the future
 	for i in included_points:
-		if (wall_ref_axial[i] >= start) and (wall_ref_axial[i] <= start + length_frac): 
+		if (wall_ref_axial[i] >= start) and (wall_ref_axial[i] <= end): 
 			wall_region_id.append(i)
 
-			axial_pos.append(wall_ref_axial[i])
-			theta_pos.append(wall_ref_theta[i])
-
 			if wall_ref_axial[i] < start + EPSILON:
-				start_border.append(i)
-			if wall_ref_axial[i] > start + length_frac - EPSILON:
-				end_border.append(i)
+				start_id.append(i) 
+				# in the future can just do start_radii.append(min_dists[i]) or start_radii = min_dists[start_border]
+				#start_border.append(tuple(wall_ref[i]))
+
+			if wall_ref_axial[i] > end - EPSILON:
+				end_id.append(i)
+				#end_border.append(tuple(wall_ref[i]))
+
+	axial_pos = wall_ref[wall_region_id,0]
+	theta_pos = wall_ref[wall_region_id,1]
+
+	#axial_pos.append(wall_ref_axial[i])
+	#theta_pos.append(wall_ref_theta[i])
+
 
 	# report the number of border points identified:
-	print 'the number of points in the start border: ', len(start_border)
-	print 'the number of points in the end border: ', len(end_border)
+	# print 'the number of points in the start border: ', len(start_border)
+	# print 'the number of points in the end border: ', len(end_border)
 
 	# find the center points projected within the desired region
-	for i in range(NoP_center):
-		if (normalized_center[i] >= start) and (normalized_center[i] <= start + length_frac):
-			center_region_id.append(i)
+	# for i in range(NoP_center):
+	# 	if (normalized_center[i] >= start) and (normalized_center[i] <= start + length_frac):
+	# 		center_region_id.append(i)
 
 	print 'Done obtaining the expansion region'
 	print '-----------------------------------'
-	return (wall_region_id, center_region_id, axial_pos, theta_pos, wall_ref, wall_to_center, start_border, end_border)
+
+	return (wall_region_id, axial_pos, theta_pos, start_id, end_id) 
+	#return (wall_region_id, axial_pos, theta_pos, wall_ref, wall_to_center, start_border, end_border)
 
 
 def acquire_start_end_radii(start_border, end_border, wall_model, wall_to_center):
@@ -113,28 +129,53 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	print 'Preparing to grow aneurysm'
 	print '--------------------------'
 
+	
+	# open the polydata
 	wallreader = vtk.vtkXMLPolyDataReader()
 	wallreader.SetFileName(wall_name)
 	wallreader.Update()
 	wall_model = wallreader.GetOutput()
 
 	included_points = face_to_points[cur_face]
+	NoP_wall = wall_model.GetNumberOfPoints()
 
-	wall_region, center_region, axial_pos, theta_pos, wall_ref, wall_to_center, start_border, end_border = obtain_expansion_region(
-																											wall_model, 
-																											centerline,
-																											included_points,
-																											start,
-																											length)
+	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(wall_model, centerline, included_points)
 
-	start_radii, end_radii = acquire_start_end_radii(start_border, end_border, wall_model, wall_to_center)
+	# compute the normalized length -> normalized end position
+	end=start+length/centerline_length
+
+	wall_region, axial_pos, theta_pos, start_id, end_id = obtain_expansion_region(wall_ref, NoP_wall, included_points, start=start, end=end)
+
+	start_border, end_border = wall_ref[start_id], wall_ref[end_id]
+	start_radii, end_radii = min_dists[start_id], min_dists[end_id]
+
+	print start_radii
+	print end_radii
+
+	#start_radii, end_radii = acquire_start_end_radii(start_border, end_border, wall_model, wall_to_center)
 	
 	affected_face_displace, intersect = organize_intersections(wall_region, point_to_face, cur_face)
 	
+	'''
 	expand = interpolated_points(axial_pos, 
 								(min(axial_pos), max(axial_pos)), 
 								rad_shape=[np.mean(start_radii), rad_max, np.mean(end_radii) ] 
 								)
+
+	'''
+
+	write_to_file('start_border', start_border)
+	write_to_file('end_border', end_border)
+
+	write_to_file('start_radii', start_radii)
+	write_to_file('end_radii', end_radii)
+
+	write_to_file('new_points', wall_ref[wall_region])
+	write_to_file('start_end', (start, end))
+
+	print 'done writing!'
+
+	expand = interpolation_2d(start_border, end_border, start_radii, end_radii, wall_ref[wall_region], start, end-start)
 
 	expand_np = np.zeros((1, wall_model.GetNumberOfPoints() ))
 
@@ -158,8 +199,8 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 			# 	print 'skipping a start point'
 			# 	continue
 
-			rad = np.linalg.norm(wall_normal)
-	 		wall_unit = [xi/rad for xi in wall_normal]
+			#rad = np.linalg.norm(wall_normal)
+	 		wall_unit = [xi/min_dists[pointID] for xi in wall_normal]
 			displace = [r*expand[i] for r in wall_unit]
 			new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
 
@@ -191,6 +232,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	wall_model.GetPointData().AddArray(expand_vtk)
 
 	wall_ref_transpose = np.transpose(wall_ref).copy()
+
 	# add the normalized axial position wall array to the vtk file 
 	norm_wall_vtk = nps.numpy_to_vtk(wall_ref_transpose[0, :])
 	norm_wall_vtk.SetName('axial pos')
@@ -223,8 +265,13 @@ def main():
 	EASING = True
 	PICKLE = False
 	FROM_PICKLE = True
-	BATCH = True
-	PLOT_CL = True
+	BATCH = False
+	PLOT_CL = False
+
+	# be lazy -- hard code the exclude, face, and cap list
+	exclude = [1]
+	face_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+	cap_list = [13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 
 	# find the centerline files within the model directory and represent them as np arrays; 
 	# find the names of the centerline files (without the .pth file ending)
@@ -232,30 +279,14 @@ def main():
 	centers, names = gather_centerlines(model_dir)
 	resampled = [resample_centerline(centers[name]) for name in names]
 
-
 	# some random code for plotting the centerlines 
-	'''
-	if PLOT_CL:
-		fig = plt.figure()
-		ax = fig.add_subplot(111, projection='3d')
-		for centerline in resampled:
-			ax.scatter(centerline[:,0], centerline[:,1], centerline[:,2])
-		for name in names:
-			center = centers[name]
-			ax.scatter(center[:,0], center[:,1], center[:,2])
-		plt.show()
-	
-	'''
-	
+	if PLOT_CL: visualize_centerlines(names, centers, resampled)
+
 	# find the face IDs assigned to the cells in the model corresponding to the centerline names in the directory
 	# note: this matches centerline name against its faceID 
 	corresponding_faces, face_list = parse_facenames(names, model_dir)
 
 
-	# be lazy -- hard code the exclude, face, and cap list
-	exclude = [1]
-	face_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-	cap_list = [13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 
 	# find the points corresponding to each relevant face ID and each cap ID
 	# note: face_to_points is from faceID to list of pointID
@@ -264,39 +295,22 @@ def main():
 	point_connectivity = None
 	NoP = 0
 
-
 	if FROM_PICKLE != True:
-		print 'computing structures from scratch'
-		print '---------------------------------'
-		face_to_points, cap_to_points, point_connectivity, NoP = wall_isolation(face_list, cap_list, exclude, model_dir=model_dir, wall_name=wall_name, EASING=EASING)
+		face_to_points, cap_to_points, point_connectivity, NoP = wall_isolation(face_list, cap_list, exclude, model_dir=model_dir, wall_model=wall_model, EASING=EASING, PICKLE=PICKLE)
 	else:
-		print 'reading structures from pickle'
-		print '------------------------------'
 		(face_to_points, cap_to_points, point_connectivity, NoP) = read_from_file("big_boy")
-
-	if PICKLE:
-		print 'writing structures to pickle'
-		print '----------------------------'
-		write_to_file("big_boy", (face_to_points, cap_to_points, point_connectivity, NoP))
 
 
 	# determine the branching structure by looking at intersections of point IDs between face ID designations
 	# determine which caps belong to which faces by looking at intersections
 	point_to_face, face_to_cap = determine_overlap(face_to_points, cap_to_points, NoP)
 
-	# prepare to grow an aneurysm at a specific region along a specified centerline
-	# to do this, we input the set of centerline points as an np array of [xyz] and 
-	# the set of pointIDs corresponding to the right wall region
-	# 
-
 	options = batch_targets(names, corresponding_faces, resampled, BATCH, EASING)
 	print names
 	print corresponding_faces
 
 	for option in options: 
-
 		print option
-
 		grow_aneurysm(
 			wall_name, 
 			face_to_points, 
