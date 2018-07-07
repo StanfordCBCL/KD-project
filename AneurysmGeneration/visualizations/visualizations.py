@@ -29,7 +29,7 @@ def visualize_centerlines(names, centers, resampled):
 		center = centers[name]
 		ax.scatter(center[:,0], center[:,1], center[:,2])
 	plt.show()
-	
+
 
 def visualize_total(name="total_cl.vtp"):
 
@@ -51,4 +51,4 @@ def visualize_total(name="total_cl.vtp"):
 
 
 if __name__ == "__main__":
-	visualize_total()
+	VMTK_centerline()

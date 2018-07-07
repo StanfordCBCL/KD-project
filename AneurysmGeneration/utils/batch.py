@@ -57,7 +57,7 @@ def read_targets(fname='targets.txt'):
 			vessel = int(line[0])
 			suffix = line[-1]
 			start, length, rad_max = [float(val) for val in line[1:4]]
-			targets.append((vessel, start, length, rad_max, suffix))
+			targets.append((vessel, start, length, .1*rad_max, suffix))
 
 	return targets
 

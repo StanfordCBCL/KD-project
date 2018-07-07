@@ -8,8 +8,7 @@
 import numpy as np
 import vtk
 from vtk.util import numpy_support as nps 
-
-from mpl_toolkits.mplot3d import Axes3D
+from visualizations.visualizations import *
 from utils.interpolation import *
 from utils.normalization import *
 from utils.parser import *
@@ -139,6 +138,11 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	included_points = face_to_points[cur_face]
 	NoP_wall = wall_model.GetNumberOfPoints()
 
+	####
+	centerline = read_from_file("RCA_cl")
+
+	######
+
 	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(wall_model, centerline, included_points)
 
 	# compute the normalized length -> normalized end position
@@ -149,20 +153,20 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	start_border, end_border = wall_ref[start_id], wall_ref[end_id]
 	start_radii, end_radii = min_dists[start_id], min_dists[end_id]
 
-	print start_radii
-	print end_radii
+	#print start_radii
+	#print end_radii
 
 	#start_radii, end_radii = acquire_start_end_radii(start_border, end_border, wall_model, wall_to_center)
 	
 	affected_face_displace, intersect = organize_intersections(wall_region, point_to_face, cur_face)
 	
-	'''
+	
 	expand = interpolated_points(axial_pos, 
 								(min(axial_pos), max(axial_pos)), 
 								rad_shape=[np.mean(start_radii), rad_max, np.mean(end_radii) ] 
 								)
 
-	'''
+	
 
 	write_to_file('start_border', start_border)
 	write_to_file('end_border', end_border)
@@ -175,7 +179,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 	print 'done writing!'
 
-	expand = interpolation_2d(start_border, end_border, start_radii, end_radii, wall_ref[wall_region], start, end-start)
+	#expand = interpolation_2d(start_border, end_border, start_radii, end_radii, wall_ref[wall_region], start, end-start)
 
 	expand_np = np.zeros((1, wall_model.GetNumberOfPoints() ))
 
@@ -265,7 +269,7 @@ def main():
 	EASING = True
 	PICKLE = False
 	FROM_PICKLE = True
-	BATCH = False
+	BATCH = True
 	PLOT_CL = False
 
 	# be lazy -- hard code the exclude, face, and cap list
@@ -279,7 +283,7 @@ def main():
 	centers, names = gather_centerlines(model_dir)
 	resampled = [resample_centerline(centers[name]) for name in names]
 
-	# some random code for plotting the centerlines 
+	# for plotting the centerlines 
 	if PLOT_CL: visualize_centerlines(names, centers, resampled)
 
 	# find the face IDs assigned to the cells in the model corresponding to the centerline names in the directory
