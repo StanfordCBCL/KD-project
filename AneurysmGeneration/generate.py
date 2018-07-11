@@ -40,7 +40,6 @@ def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.
 	wall_ref_axial = wall_ref[:, 0]
 	wall_ref_theta = wall_ref[:, 1]
 
-	
 
 	# initialize datastructures
 	wall_region_id = []
@@ -49,14 +48,6 @@ def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.
 
 	axial_pos = []
 	theta_pos = []
-	#center_region_id = []
-
-	#start_border = []
-	#end_border = []
-
-	# determine how many points to iterate over
-	# 
-	# NoP_center = len(centerline)
 
 	# find the wall points projected into the desired centerline region
 
@@ -67,45 +58,18 @@ def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.
 
 			if wall_ref_axial[i] < start + EPSILON:
 				start_id.append(i) 
-				# in the future can just do start_radii.append(min_dists[i]) or start_radii = min_dists[start_border]
-				#start_border.append(tuple(wall_ref[i]))
 
 			if wall_ref_axial[i] > end - EPSILON:
 				end_id.append(i)
-				#end_border.append(tuple(wall_ref[i]))
 
 	axial_pos = wall_ref[wall_region_id,0]
 	theta_pos = wall_ref[wall_region_id,1]
 
-	#axial_pos.append(wall_ref_axial[i])
-	#theta_pos.append(wall_ref_theta[i])
-
-
-	# report the number of border points identified:
-	# print 'the number of points in the start border: ', len(start_border)
-	# print 'the number of points in the end border: ', len(end_border)
-
-	# find the center points projected within the desired region
-	# for i in range(NoP_center):
-	# 	if (normalized_center[i] >= start) and (normalized_center[i] <= start + length_frac):
-	# 		center_region_id.append(i)
 
 	print 'Done obtaining the expansion region'
 	print '-----------------------------------'
 
 	return (wall_region_id, axial_pos, theta_pos, start_id, end_id) 
-	#return (wall_region_id, axial_pos, theta_pos, wall_ref, wall_to_center, start_border, end_border)
-
-
-def acquire_start_end_radii(start_border, end_border, wall_model, wall_to_center):
-	'''
-		
-	'''
-	start_radii = acquire_radii(start_border, wall_model, wall_to_center)
-	end_radii = acquire_radii(end_border, wall_model, wall_to_center)
-
-	return (start_radii, end_radii)
-
 
 
 def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_connectivity, cur_face, centerline, start, length, rad_max, easing, expansion_mode, suffix):
@@ -155,16 +119,25 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 	#print start_radii
 	#print end_radii
-
-	#start_radii, end_radii = acquire_start_end_radii(start_border, end_border, wall_model, wall_to_center)
 	
 	affected_face_displace, intersect = organize_intersections(wall_region, point_to_face, cur_face)
 	
-	
-	expand = interpolated_points(axial_pos, 
-								(min(axial_pos), max(axial_pos)), 
-								rad_shape=[np.mean(start_radii), rad_max, np.mean(end_radii) ] 
-								)
+	expand = []
+
+	if expansion_mode == 'scalar':
+		expand = interpolated_points(axial_pos,
+									(min(axial_pos), max(axial_pos)),
+
+
+
+									)
+
+	elif expansion_mode == 'absolute': 
+		expand = interpolated_points(axial_pos, 
+									(min(axial_pos), max(axial_pos)), 
+									rad_shape=[np.mean(start_radii), rad_max, np.mean(end_radii) ] 
+									)
+
 
 	
 
@@ -193,9 +166,8 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 		new_pt = []
 
 		if expansion_mode == 'scalar':
-			displace = [expand[i]*dn for (r, dn) in zip(cur_pt, normal)]
+			displace = [expand[i]*dn for r in wall_normal]
 			new_pt = [r + dr for (r, dr) in zip(cur_pt, displace)]
-			
 
 		elif expansion_mode == 'absolute':
 
@@ -208,10 +180,9 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 			displace = [r*expand[i] for r in wall_unit]
 			new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
 
-			# after applying the displacement to the wall points, modify the magnitude of the displacement vector
-			# to accomodate shifting of branches 
-			displace_adjusted = [d - n for (d, n) in zip (displace, wall_normal)]
-
+		# after applying the displacement to the wall points, modify the magnitude of the displacement vector
+		# to accomodate shifting of branches 
+		displace_adjusted = [d - n for (d, n) in zip (displace, wall_normal)]
 
 		# alter the current point's coordinates to reflect expansion
 		wall_model.GetPoints().SetPoint(pointID, new_pt)
@@ -221,8 +192,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 		# keep track of the displacement vectors affecting branch roots so that we know how much to shift
 		# the branches
-		if pointID in intersect.keys():
-			affected_face_displace[intersect[pointID]].append(np.array(displace_adjusted))
+		if pointID in intersect.keys(): affected_face_displace[intersect[pointID]].append(np.array(displace_adjusted))
 
 
 	print '>>>  the maximum displacement: ', np.max(expand_np)

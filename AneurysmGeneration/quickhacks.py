@@ -5,8 +5,8 @@
 import vtk
 from vtk.util import numpy_support as nps 
 import numpy as np
-#import matplotlib.pyplot as plt
-#from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 from utils.batch import read_from_file, write_to_file
 from utils.interpolation import resample_centerline
@@ -24,26 +24,25 @@ def VMTK_centerline(name='RCA_cl'):
 	centerline = read_from_file(name)
 
 
-	# dispaly a little bit first 
+	# display a little bit first 
 	
-	# fig = plt.figure()
-	# ax = fig.add_subplot(111, projection='3d')
-	# ax.scatter(centerline[:,0], centerline[:,1], centerline[:,2])
-	# ax.scatter(centerline[600:,0], centerline[600:,1], centerline[600:,2])
-	# plt.show()
+	fig = plt.figure()
+	ax = fig.add_subplot(111, projection='3d')
+	ax.plot3D(centerline[:,0], centerline[:,1], centerline[:,2])
+	ax.scatter(centerline[600:,0], centerline[600:,1], centerline[600:,2])
+	plt.show()
 
 	centerline = centerline[600:]
 
-
-	#diff = np.diff(centerline, axis=0)
-	#print diff
-	#okay = np.where(np.abs(diff[:,0]) + np.abs(diff[:,1]) + np.abs(diff[:,2]) > 0)
-	#print okay
-	#centerline = np.r_[np.reshape(centerline[0], (1, 3)), centerline[okay], np.reshape(centerline[-1,:], (1, 3))]
-
-	centerline = np.unique(centerline, axis=0)
 	# interpolate so that we get a smoother point matching 
+	_, CL_indices = np.unique(centerline, return_index=True, axis=0)
+	centerline = centerline[sorted(CL_indices)]
 	centerline = resample_centerline(centerline)
+
+	fig = plt.figure()
+	ax = fig.add_subplot(111, projection='3d')
+	ax.plot3D(centerline[:,0], centerline[:,1], centerline[:,2])
+	plt.show()
 
 	write_to_file(name, centerline)
 

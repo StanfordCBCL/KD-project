@@ -41,18 +41,19 @@ def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='cubi
 	#initialize variable to hold the number of points provided in our predefined shape 
 	piecewise_NoP = -1
 
-	#initialize interpolated values
-	interpolated = None
-
 	#default expansion shape; specify by specifying a set of y coords that we assume to be evenly spaced
 	if rad_shape is None:
 		print 'default rad_shape will be used'
 		#rad_shape = [0, .1, .3, .5, .6, .6, .5, .3, .1, 0]
 		# rad_shape = [0, .75, 1.5, 2, 2, 1.5, .75, 0]
-		rad_shape =[0, 1, 2, 3, 4, 4, 3, 2, 1, 0]
+		rad_shape = [0, 1, 2, 3, 4, 4, 3, 2, 1, 0]
 
-	else:
-		print 'rad_shape has been specified:'
+	elif len(rad_shape) == 1: 
+		print 'rad_shape has been specified with r_max'
+		rad_shape = np.array([0, .5, .])
+
+	elif len(rad_shape) == 3:
+		print 'rad_shape has been specified with bc endpoints and r_max:'
 		start, middle, end = rad_shape
 		rad_shape = [start, .5*(start + middle), middle, .5*(middle + end), end]
 
@@ -66,16 +67,12 @@ def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='cubi
 	if interp_type is 'cubic_clamped':
 		print 'cubic spline interpolation will be used with clamped bc'
 		cs = interpolate.CubicSpline(np.linspace(centerrange[0], centerrange[1], piecewise_NoP), rad_shape, bc_type='clamped')
-		interpolated = cs(x_interp)
+		return cs(x_interp)
 
 	elif interp_type is 'b-spline':
 		print 'b-spline interpolation will be used'
 		tck = interpolate.splrep(np.linspace(centerrange[0], centerrange[1], piecewise_NoP), rad_shape)
-		interpolated = interpolate.splev(x_interp, tck, der=0)
-
-	print 'done interpolating points '
-	print '--------------------------'
-	return interpolated
+		return interpolate.splev(x_interp, tck, der=0)
 
 
 def interpolation_2d(start_coords, end_coords, start_values, end_values, new_points, start, length, template=None, rad_max=.03, interp_type='cubic'):
@@ -156,7 +153,7 @@ def resample_centerline(centerline, length=None, nSpoints_factor = 2):
 
 	if length is None:
 		length = len(centerline[0])
-	nSpoints = length*nSpoints
+	nSpoints = length*nSpoints_factor
 
 	print '>>>	 the number of spline points is ', nSpoints
 
