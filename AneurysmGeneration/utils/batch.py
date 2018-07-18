@@ -42,11 +42,15 @@ def read_from_file(name):
 
 	return new_obj
 
+
 def read_targets(fname='targets.txt'):
 	'''
 	reads a file called targets.txt that contains: 
-	[vessel name] [start pos] [length] [rad_max]
+	[vessel id] [start pos] [length] [rad_max] [suffix] 
 	as a line for each artificial aneurysm that we want to generate
+
+	[suffix] is an identifier for each aneurysm and is appended to filename after creation
+
 	'''
 	targets = []
 
@@ -60,6 +64,7 @@ def read_targets(fname='targets.txt'):
 			targets.append((vessel, start, length, rad_max, suffix))
 
 	return targets
+
 
 def write_target_facenames(target_facename, target_suffix_list):
 	'''

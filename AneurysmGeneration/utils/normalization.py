@@ -211,7 +211,7 @@ def projection(wall, centerline, included_points):
 #		transformed_wall_ref[i, 1] = compute_theta(r, n, t)
 
 		wall_to_center[i] = centerline[min_idx]
-		min_dists[i] = min_dist
+		min_dists[i] = np.sqrt(min_dist)
 
 	return (transformed_wall_ref, normalized_center, wall_to_center, min_dists, centerline_length)
 

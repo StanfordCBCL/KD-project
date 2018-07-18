@@ -35,13 +35,9 @@ def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.
 
 	print 'Obtaining the expansion region'
 	print '------------------------------'
-	# project wall points to closest centerline point 
-	
 
 	wall_ref_axial = wall_ref[:, 0]
 	wall_ref_theta = wall_ref[:, 1]
-
-	
 
 	# initialize datastructures
 	wall_region_id = []
@@ -50,16 +46,6 @@ def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.
 
 	axial_pos = []
 	theta_pos = []
-	#center_region_id = []
-
-	#start_border = []
-	#end_border = []
-
-	# determine how many points to iterate over
-	# 
-	# NoP_center = len(centerline)
-
-	# find the wall points projected into the desired centerline region
 
 	# consider switching this for np.where in the future
 	for i in included_points:
@@ -68,45 +54,21 @@ def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.
 
 			if wall_ref_axial[i] < start + EPSILON:
 				start_id.append(i) 
-				# in the future can just do start_radii.append(min_dists[i]) or start_radii = min_dists[start_border]
-				#start_border.append(tuple(wall_ref[i]))
 
 			if wall_ref_axial[i] > end - EPSILON:
 				end_id.append(i)
-				#end_border.append(tuple(wall_ref[i]))
 
 	axial_pos = wall_ref[wall_region_id,0]
 	theta_pos = wall_ref[wall_region_id,1]
-
-	#axial_pos.append(wall_ref_axial[i])
-	#theta_pos.append(wall_ref_theta[i])
-
 
 	# report the number of border points identified:
 	# print 'the number of points in the start border: ', len(start_border)
 	# print 'the number of points in the end border: ', len(end_border)
 
-	# find the center points projected within the desired region
-	# for i in range(NoP_center):
-	# 	if (normalized_center[i] >= start) and (normalized_center[i] <= start + length_frac):
-	# 		center_region_id.append(i)
-
 	print 'Done obtaining the expansion region'
 	print '-----------------------------------'
 
 	return (wall_region_id, axial_pos, theta_pos, start_id, end_id) 
-	#return (wall_region_id, axial_pos, theta_pos, wall_ref, wall_to_center, start_border, end_border)
-
-
-def acquire_start_end_radii(start_border, end_border, wall_model, wall_to_center):
-	'''
-		
-	'''
-	start_radii = acquire_radii(start_border, wall_model, wall_to_center)
-	end_radii = acquire_radii(end_border, wall_model, wall_to_center)
-
-	return (start_radii, end_radii)
-
 
 
 def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_connectivity, cur_face, centerline, start, length, rad_max, easing, expansion_mode, suffix):
@@ -139,6 +101,8 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	included_points = face_to_points[cur_face]
 	NoP_wall = wall_model.GetNumberOfPoints()
 
+	centerline=read_from_file('RCA_cl')
+
 	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(wall_model, centerline, included_points)
 
 	# compute the normalized length -> normalized end position
@@ -148,34 +112,22 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 	start_border, end_border = wall_ref[start_id], wall_ref[end_id]
 	start_radii, end_radii = min_dists[start_id], min_dists[end_id]
+	adjust = centerline_shift(start_id, end_id, axial_pos, wall_model, wall_to_center[start_id[0]], wall_to_center[end_id[-1]])
+	print adjust
+	#print start_radii
+	#print end_radii
 
-	print start_radii
-	print end_radii
-
-	#start_radii, end_radii = acquire_start_end_radii(start_border, end_border, wall_model, wall_to_center)
-	
 	affected_face_displace, intersect = organize_intersections(wall_region, point_to_face, cur_face)
 	
-	'''
+
 	expand = interpolated_points(axial_pos, 
 								(min(axial_pos), max(axial_pos)), 
 								rad_shape=[np.mean(start_radii), rad_max, np.mean(end_radii) ] 
 								)
 
-	'''
+	
 
-	write_to_file('start_border', start_border)
-	write_to_file('end_border', end_border)
-
-	write_to_file('start_radii', start_radii)
-	write_to_file('end_radii', end_radii)
-
-	write_to_file('new_points', wall_ref[wall_region])
-	write_to_file('start_end', (start, end))
-
-	print 'done writing!'
-
-	expand = interpolation_2d(start_border, end_border, start_radii, end_radii, wall_ref[wall_region], start, end-start)
+	# expand = interpolation_2d(start_border, end_border, start_radii, end_radii, wall_ref[wall_region], start, end-start)
 
 	expand_np = np.zeros((1, wall_model.GetNumberOfPoints() ))
 
@@ -195,19 +147,17 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 		elif expansion_mode == 'absolute':
 
-			# if pointID in start_border:
-			# 	print 'skipping a start point'
-			# 	continue
+			if expand[i] < min_dists[pointID]: continue
 
-			#rad = np.linalg.norm(wall_normal)
 	 		wall_unit = [xi/min_dists[pointID] for xi in wall_normal]
 			displace = [r*expand[i] for r in wall_unit]
 			new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
+			new_pt = [r - dr for (r, dr) in zip(new_pt, adjust[i])]
 
-			# after applying the displacement to the wall points, modify the magnitude of the displacement vector
-			# to accomodate shifting of branches 
-			displace_adjusted = [d - n for (d, n) in zip (displace, wall_normal)]
 
+		# after applying the displacement to the wall points, modify the magnitude of the displacement vector
+		# to accomodate shifting of branches 
+		displace_adjusted = [d - n for (d, n) in zip (displace, wall_normal)]
 
 		# alter the current point's coordinates to reflect expansion
 		wall_model.GetPoints().SetPoint(pointID, new_pt)
@@ -265,7 +215,7 @@ def main():
 	EASING = True
 	PICKLE = False
 	FROM_PICKLE = True
-	BATCH = False
+	BATCH = True
 	PLOT_CL = False
 
 	# be lazy -- hard code the exclude, face, and cap list
@@ -310,7 +260,7 @@ def main():
 	print corresponding_faces
 
 	for option in options: 
-		print option
+		print option['suffix']
 		grow_aneurysm(
 			wall_name, 
 			face_to_points, 

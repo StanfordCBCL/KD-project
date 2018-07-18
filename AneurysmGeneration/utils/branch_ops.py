@@ -118,3 +118,46 @@ def organize_intersections(wall_region, point_to_face, cur_face):
 
 	return (affected_face_displace, intersect)
 
+
+def centerline_shift(start_id, end_id, axial_pos, wall_model, cl_start, cl_end):
+	'''
+	'''
+	start_pts = np.zeros((len(start_id), 3))
+	end_pts = np.zeros((len(end_id), 3))
+
+	for i, pointID in enumerate(start_id): start_pts[i] = wall_model.GetPoints().GetPoint(pointID)
+	for i, pointID in enumerate(end_id): end_pts[i] = wall_model.GetPoints().GetPoint(pointID)
+
+	centroid_start = np.mean(start_pts, axis=0)
+	centroid_end = np.mean(end_pts, axis=0)
+
+	print centroid_start
+	print centroid_end
+
+	disp_start = np.array(cl_start) - centroid_start 
+	disp_end = np.array(cl_end) - centroid_end
+
+	axial_pos = axial_pos.reshape(len(axial_pos), 1)
+
+	adjust = (disp_end - disp_start)*axial_pos + disp_start 
+
+	return adjust
+
+
+# def smoothing(wall_model, point_connectivity, point_set, num_iterations=10, aggress=.2):
+# 	'''
+# 	'''
+
+# 	for c in num_iterations:
+
+# 		points_with_neighbors = set()
+
+# 		pos_cache = np.zeros((len(point_set), 3))
+# 		for i, pointID in enumerate(point_set): pos_cache[i] = wall_model.GetPoints().GetPoint(pointID)
+
+
+
+
+
+
+
