@@ -22,7 +22,7 @@ def write_to_file(name, obj):
 
 	print 'writing structures to pickle'
 	print '----------------------------'
-	path = 'pickles/' + name + '.pkl'
+	path = '~/Documents/lab/KD-project/AneurysmGeneration/pickles/' + name + '.pkl'
 	file = open(path, 'wb')
 	pickle.dump(obj, file)
 	file.close()
@@ -35,7 +35,7 @@ def read_from_file(name):
 	print 'reading structures from pickle'
 	print '------------------------------'
 
-	path = 'pickles/' + name + '.pkl'
+	path = '/Users/alex/Documents/lab/KD-project/AneurysmGeneration/pickles/' + name + '.pkl'
 	file = open(path, 'rb')
 	new_obj = pickle.load(file)
 	file.close()
@@ -43,7 +43,7 @@ def read_from_file(name):
 	return new_obj
 
 
-def read_targets(fname='targets.txt'):
+def read_targets(fname='~/Documents/lab/KD-project/AneurysmGeneration/targets.txt'):
 	'''
 	reads a file called targets.txt that contains: 
 	[vessel id] [start pos] [length] [rad_max] [suffix] 
