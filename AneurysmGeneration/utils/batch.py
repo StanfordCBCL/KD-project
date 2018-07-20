@@ -22,7 +22,7 @@ def write_to_file(name, obj):
 
 	print 'writing structures to pickle'
 	print '----------------------------'
-	path = '~/Documents/lab/KD-project/AneurysmGeneration/pickles/' + name + '.pkl'
+	path = '/Users/alex/Documents/lab/KD-project/AneurysmGeneration/pickles/' + name + '.pkl'
 	file = open(path, 'wb')
 	pickle.dump(obj, file)
 	file.close()
