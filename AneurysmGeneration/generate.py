@@ -212,10 +212,10 @@ def main():
 	wall_name = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/SKD0050_baseline_model.vtp"
 
 	# some options 
-	EASING = True
+	EASING = False
 	PICKLE = False
 	FROM_PICKLE = True
-	BATCH = True
+	BATCH = False
 	PLOT_CL = False
 
 	# be lazy -- hard code the exclude, face, and cap list

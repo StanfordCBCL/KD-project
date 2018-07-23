@@ -17,7 +17,7 @@ from slice import *
 from batch import *
 
 
-def shift_branches(wall_model, wall_region, intersection, affected_face_displace, face_to_cap, face_to_points, point_connectivity, easing, boost=1.2):
+def shift_branches(wall_model, wall_region, intersection, affected_face_displace, face_to_cap, face_to_points, point_connectivity, easing, boost=1.0):
 	'''
 
 	'''
@@ -54,7 +54,7 @@ def shift_branches(wall_model, wall_region, intersection, affected_face_displace
 	return 
 
 
-def branch_easing(wall_model, intersection, vessel_points, point_connectivity, num_iterations=8, aggress=.8):
+def branch_easing(wall_model, intersection, vessel_points, point_connectivity, num_iterations=4, aggress=.5):
 
 	print 'Preparing to perform branch easing'
 	print '----------------------------------'

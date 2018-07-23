@@ -43,7 +43,7 @@ def read_from_file(name):
 	return new_obj
 
 
-def read_targets(fname='~/Documents/lab/KD-project/AneurysmGeneration/targets.txt'):
+def read_targets(fname='/Users/alex/Documents/lab/KD-project/AneurysmGeneration/targets.txt'):
 	'''
 	reads a file called targets.txt that contains: 
 	[vessel id] [start pos] [length] [rad_max] [suffix] 

@@ -46,7 +46,7 @@ def parse_command_line(args):
 	parser = argparse.ArgumentParser(description='lol')
 	parser.add_argument('--source', action="store", type=str, default="AneurysmGeneration/models/SKD0050/SKD0050_baseline_model_modified_p1.vtp")
 	parser.add_argument('--results', action="store", type=str, default="Artificial/RCA/p1/all_results.vtp")
-	parser.add_argument('--pkl', dest='feature', action='store_true')
+	parser.add_argument('--pkl', dest='feature', action='store_false')
 	parser.add_argument('--vtk', dest='feature', action='store_true')
 	parser.add_argument('--suff', action="store", type=str, default='p1')
 	parser.set_defaults(feature=True)
@@ -116,7 +116,7 @@ def write_points_to_pkl(points_source, points_results, suff):
 def main():
 
 
-	CONTINUE=False
+	CONTINUE=True
 	args = parse_command_line(sys.argv)
 
 	# # we need the face to points correspondence from the original source model 
@@ -151,7 +151,7 @@ def main():
 
 	else:
 		'reading points from pickle'
-		points_source, points_results = read_from_file('points_' + suff)
+		points_source, points_results = read_from_file('points_' + args['suff'])
 
 
 	if CONTINUE:
@@ -176,14 +176,14 @@ def main():
 
 		block_sz = 100
 		for i in range(len(bounded_results_idx)//100):
-		# for c,  in enumerate(partitions[:10]):
+
 			print 'split', i
-			#print partition.dtype
-			#print chunk.shape
 			cur_idx = bounded_results_idx[block_sz*i:block_sz*(i+1)]
 			mapping[cur_idx] = min_dist(points_results[cur_idx], points_source)
 
-			# print chunk.shape
+		write_to_file('mapping_'+args['suff'], mapping)
+
+			
 
 	
 	
