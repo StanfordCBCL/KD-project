@@ -4,6 +4,7 @@
 
 import numpy as np
 import sys
+import os
 from AneurysmGeneration.utils.batch import *
 import argparse
 
@@ -48,6 +49,7 @@ def parse_command_line(args):
 	parser.add_argument('--results', action="store", type=str, default="Artificial/RCA/p1/all_results.vtp")
 	parser.add_argument('--pkl', dest='feature', action='store_false')
 	parser.add_argument('--vtk', dest='feature', action='store_true')
+	parser.add_argument('--mapping', dest='mapping', action='store_true')
 	parser.add_argument('--suff', action="store", type=str, default='p1')
 	parser.set_defaults(feature=True)
 	
@@ -154,7 +156,7 @@ def main():
 		points_source, points_results = read_from_file('points_' + args['suff'])
 
 
-	if CONTINUE:
+	if args['mapping']:
 		# # load in the centerline
 		centerline = read_from_file('RCA_cl')
 		

@@ -6,6 +6,7 @@
 '''
 import numpy as np
 import pickle
+import os
 
 
 def aggregate_options(start=.1, length=.1, rad_max=.8, easing=True, cur_name=None, cur_center=None, cur_face=None, expansion_mode='absolute', suffix=None):
@@ -22,7 +23,8 @@ def write_to_file(name, obj):
 
 	print 'writing structures to pickle'
 	print '----------------------------'
-	path = '/Users/alex/Documents/lab/KD-project/AneurysmGeneration/pickles/' + name + '.pkl'
+	WD_PATH = os.getcwd()
+	path = WD_PATH + '/AneurysmGeneration/pickles/' + name + '.pkl'
 	file = open(path, 'wb')
 	pickle.dump(obj, file)
 	file.close()
@@ -35,7 +37,8 @@ def read_from_file(name):
 	print 'reading structures from pickle'
 	print '------------------------------'
 
-	path = '/Users/alex/Documents/lab/KD-project/AneurysmGeneration/pickles/' + name + '.pkl'
+	WD_PATH = os.getcwd()
+	path = WD_PATH + '/AneurysmGeneration/pickles/' + name + '.pkl'
 	file = open(path, 'rb')
 	new_obj = pickle.load(file)
 	file.close()
