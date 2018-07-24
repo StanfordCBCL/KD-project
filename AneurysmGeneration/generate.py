@@ -103,7 +103,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 	centerline=read_from_file('RCA_cl')
 
-	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(NoP_wall, centerline, wall_points[list(included_points)])
+	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(NoP_wall, centerline, wall_points, np.array(list(included_points)))
 
 	# compute the normalized length -> normalized end position
 	end=start+length/centerline_length

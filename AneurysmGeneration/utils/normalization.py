@@ -103,6 +103,12 @@ def normalized_centerline_pth(center):
 	return (NoP, normalized, centerline_length)
 
 
+def minimize_distances(points_results, points_source):
+
+	distances = np.sqrt(((points_results - points_source[:, np.newaxis])**2).sum(axis=2))
+	return (np.argmin(distances, axis=0), np.amin(distances, axis=0))
+
+
 def compute_reference_norm(centerline):
 	'''
 		input: 
@@ -110,6 +116,9 @@ def compute_reference_norm(centerline):
 		output: 
 			* 
 	'''
+
+	print 'computing reference norms'
+	print '-------------------------'
 
 	NoP = centerline.shape[0]
 	p0 = np.roll(centerline, shift = -1, axis= 1)
@@ -135,16 +144,24 @@ def compute_theta(r, n, t):
 		output: 
 			* theta, the angle between the two vectors in [-pi, pi]
 	'''
+	
+
+	print 'computing theta'
+	print '----------------'
+
 	# precompute some stuff
-	mag_r = np.linalg.norm(r)
-	mag_n = np.linalg.norm(n)
+	mag_r = np.linalg.norm(r, axis=1)
+	mag_n = np.linalg.norm(n, axis=1)
 
 	# compute cos
-	cos_rn = np.dot(r, n)/mag_r/mag_n
+	cos_rn = (r*n).sum(axis=1)
+	cos_rn = np.divide(cos_rn, mag_r)
+	cos_rn = np.divide(cos_rn, mag_n)
+#	/mag_r/mag_n
 
 	# compute sin 
 	cx = np.cross(r, n)
-	sin_rn = np.sign(np.dot(cx, t))*np.linalg.norm(cx)/mag_r/mag_n 
+	sin_rn = np.sign((cx*t).sum(axis=1))*np.linalg.norm(cx, axis=1)/mag_r/mag_n 
 
 	# returning arctan 
 	arctan_rn = np.arctan2(sin_rn, cos_rn)
@@ -152,12 +169,13 @@ def compute_theta(r, n, t):
 	return arctan_rn
 
 
-def projection(NoP, centerline, vessel_points):
+def projection(NoP, centerline, wall_points, included_ids):
 	'''
 		input: 
 			* wall polydata 
-			* centerline points as np array of shape (NoP, 3) 
-			* included_points, the list of point IDs for the vessel wall we are considering
+			* centerline, the centerline points as np array of shape (NoP_center, 3) 
+			* wall_points, the points of the entire model as shape (NoP_wall, 3)
+			* included_ids, the set of point IDs for the vessel wall we are considering
 
 		output:
 			* transformed_wall_ref, a np array of shape (NoP, 2) representing (axial pos, theta) for each point on the wall
@@ -190,26 +208,48 @@ def projection(NoP, centerline, vessel_points):
 	wall_to_center = {}
 	min_dists = np.zeros((NoP, 1))
 
-	for i in range(vessel_points.shape[0]):
-		wall_pt = vessel_points[i]
-		min_dist = float('inf')
-		min_idx = -1
-		for k in range(NoP_center):
-			center_pt = centerline[k]
-			cur_dist = np.linalg.norm(wall_pt-center_pt)
-			if cur_dist < min_dist:
-				min_dist = cur_dist
-				min_idx = k
+	chunk_sz = 500
+	n_chunks = len(included_ids)//chunk_sz
 
-		r = np.array(wall_pt) - centerline[min_idx]
-		n = reference_norms[min_idx]
-		t = reference_tangents[min_idx]
-		transformed_wall_ref[i] = normalized_center[min_idx], compute_theta(r, n, t)
-#		transformed_wall_ref[i, 1] = compute_theta(r, n, t)
+	for c in range(n_chunks):
+		print '> chunk ', c
+		id_chunk = included_ids[c*chunk_sz:(c+1)*chunk_sz]
+		if c == n_chunks - 1: id_chunk = included_ids[c*chunk_sz:]
 
-		wall_to_center[i] = centerline[min_idx]
-		min_dists[i] = min_dist
-		# min_dists[i] = np.sqrt(min_dist)
+		center_indices, dists = minimize_distances(wall_points[id_chunk], centerline)
+		min_dists[id_chunk] = dists.reshape(len(id_chunk), 1)
+
+		r = wall_points[id_chunk] - centerline[center_indices]
+		n = reference_norms[center_indices]
+		t = reference_tangents[center_indices]
+		transformed_wall_ref[id_chunk,0] = normalized_center[center_indices]
+		transformed_wall_ref[id_chunk,1] = compute_theta(r, n, t)
+
+		for pointID, center_idx in zip(id_chunk, center_indices): wall_to_center[pointID] = centerline[center_idx]
+
+
+
+# 	for i in included_ids:
+# 		print i
+# 		wall_pt = wall_points[i]
+# 		min_dist = float('inf')
+# 		min_idx = -1
+# 		for k in range(NoP_center):
+# 			center_pt = centerline[k]
+# 			cur_dist = np.linalg.norm(wall_pt-center_pt)
+# 			if cur_dist < min_dist:
+# 				min_dist = cur_dist
+# 				min_idx = k
+
+# 		r = wall_pt - centerline[min_idx]
+# 		n = reference_norms[min_idx]
+# 		t = reference_tangents[min_idx]
+# 		transformed_wall_ref[i] = normalized_center[min_idx], compute_theta(r, n, t)
+# #		transformed_wall_ref[i, 1] = compute_theta(r, n, t)
+
+# 		wall_to_center[i] = centerline[min_idx]
+# 		min_dists[i] = min_dist
+# 		# min_dists[i] = np.sqrt(min_dist)
 
 	return (transformed_wall_ref, normalized_center, wall_to_center, min_dists, centerline_length)
 

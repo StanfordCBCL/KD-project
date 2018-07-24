@@ -60,7 +60,7 @@ def parse_command_line(args):
 
 	return args
 
-def apply_bounding_box(centerline, points, offsets=np.array([.11, .15, .8])):
+def apply_bounding_box(centerline, points, offsets=np.array([.11, .13, .8])):
 	'''
 		apply a bounding box based on min/max in axis 0 of centerline to points, 
 		return the restricted indices
@@ -108,10 +108,10 @@ def prepare_chunks(idx, block_sz=100):
 	# return np.split(idx, partitions)
 
 
-def min_dist(points_results, points_source):
+# def min_dist(points_results, points_source):
 
-	distances = np.sum((points_results - points_source[:, np.newaxis])**2, axis=2)
-	return np.argmin(distances, axis=0)
+# 	distances = np.sum((points_results - points_source[:, np.newaxis])**2, axis=2)
+# 	return np.argmin(distances, axis=0)
 
 
 def write_points_to_pkl(points_source, points_results, suff):
@@ -182,11 +182,16 @@ def main():
 		mapping = np.zeros(points_results.shape[0])
 
 		block_sz = 150
-		for i in range(len(bounded_results_idx)//100):
+		n_splits = len(bounded_results_idx)//100
+		for i in range(n_splits):
 
 			print 'split', i
 			cur_idx = bounded_results_idx[block_sz*i:block_sz*(i+1)]
-			mapping[cur_idx] = min_dist(points_results[cur_idx], points_source)
+
+			if i == n_splits - 1:
+				cur_idx = bounded_results_idx[block_sz*i:]
+
+			_, mapping[cur_idx] = minimize_distances(points_results[cur_idx], points_source)
 
 		write_to_file('mapping_'+args['suff'], mapping)
 
@@ -236,7 +241,7 @@ def main():
 
 	
 	if args['post']:
-		_, vessel_points = read_from_file('mapped_'+args['suff'])
+		vessel_ids, vessel_points = read_from_file('mapped_'+args['suff'])
 		# load in the centerline
 		centerline = read_from_file('RCA_cl')
 
@@ -245,7 +250,7 @@ def main():
 
 		# get start and length from targets 
 
-		
+
 
 
 
