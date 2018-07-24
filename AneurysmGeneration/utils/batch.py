@@ -23,8 +23,8 @@ def write_to_file(name, obj):
 
 	print 'writing structures to pickle'
 	print '----------------------------'
-	WD_PATH = os.getcwd()
-	path = WD_PATH + '/AneurysmGeneration/pickles/' + name + '.pkl'
+
+	path = os.getcwd() + '/AneurysmGeneration/pickles/' + name + '.pkl'
 	file = open(path, 'wb')
 	pickle.dump(obj, file)
 	file.close()
@@ -37,8 +37,7 @@ def read_from_file(name):
 	print 'reading structures from pickle'
 	print '------------------------------'
 
-	WD_PATH = os.getcwd()
-	path = WD_PATH + '/AneurysmGeneration/pickles/' + name + '.pkl'
+	path = os.getcwd() + '/AneurysmGeneration/pickles/' + name + '.pkl'
 	file = open(path, 'rb')
 	new_obj = pickle.load(file)
 	file.close()
@@ -46,7 +45,7 @@ def read_from_file(name):
 	return new_obj
 
 
-def read_targets(fname='/Users/alex/Documents/lab/KD-project/AneurysmGeneration/targets.txt'):
+def read_targets(fname='/AneurysmGeneration/targets.txt', as_dict=False):
 	'''
 	reads a file called targets.txt that contains: 
 	[vessel id] [start pos] [length] [rad_max] [suffix] 
@@ -56,6 +55,7 @@ def read_targets(fname='/Users/alex/Documents/lab/KD-project/AneurysmGeneration/
 
 	'''
 	targets = []
+	fname = os.getcwd() + fname
 
 	with open(fname) as f:
 		all_lines = [line.split() for line in f.readlines()]
@@ -66,14 +66,9 @@ def read_targets(fname='/Users/alex/Documents/lab/KD-project/AneurysmGeneration/
 			start, length, rad_max = [float(val) for val in line[1:4]]
 			targets.append((vessel, start, length, rad_max, suffix))
 
+	if as_dict: 
+		return {target[-1]:target[:-1] for target in targets}
 	return targets
-
-
-def write_target_facenames(target_facename, target_suffix_list):
-	'''
-	'''
-
-	return
 
 
 def batch_targets(names, corresponding_faces, resampled, batch_status, easing):

@@ -225,31 +225,9 @@ def projection(NoP, centerline, wall_points, included_ids):
 		transformed_wall_ref[id_chunk,0] = normalized_center[center_indices]
 		transformed_wall_ref[id_chunk,1] = compute_theta(r, n, t)
 
-		for pointID, center_idx in zip(id_chunk, center_indices): wall_to_center[pointID] = centerline[center_idx]
+		for pointID, center_idx in zip(id_chunk, center_indices): 
+			wall_to_center[pointID] = centerline[center_idx]
 
-
-
-# 	for i in included_ids:
-# 		print i
-# 		wall_pt = wall_points[i]
-# 		min_dist = float('inf')
-# 		min_idx = -1
-# 		for k in range(NoP_center):
-# 			center_pt = centerline[k]
-# 			cur_dist = np.linalg.norm(wall_pt-center_pt)
-# 			if cur_dist < min_dist:
-# 				min_dist = cur_dist
-# 				min_idx = k
-
-# 		r = wall_pt - centerline[min_idx]
-# 		n = reference_norms[min_idx]
-# 		t = reference_tangents[min_idx]
-# 		transformed_wall_ref[i] = normalized_center[min_idx], compute_theta(r, n, t)
-# #		transformed_wall_ref[i, 1] = compute_theta(r, n, t)
-
-# 		wall_to_center[i] = centerline[min_idx]
-# 		min_dists[i] = min_dist
-# 		# min_dists[i] = np.sqrt(min_dist)
 
 	return (transformed_wall_ref, normalized_center, wall_to_center, min_dists, centerline_length)
 

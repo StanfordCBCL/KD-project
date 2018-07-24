@@ -11,22 +11,6 @@ from AneurysmGeneration.utils.slice import *
 import argparse
 
 
-# def extract_points(polydata):
-# 	'''
-# 		Given an input polydata, extract points into ndarray of shape (NoP, 3)
-# 	'''
-
-# 	print 'extracting points'
-
-# 	NoP = polydata.GetNumberOfPoints()
-# 	points = np.zeros((NoP, 3))
-
-# 	for i in range(NoP):
-# 		points[i] = polydata.GetPoints().GetPoint(i)
-
-# 	return (NoP, points)
-
-
 def return_polydata(path):
 	'''
 		Given a file name, open and return the data
@@ -43,6 +27,9 @@ def return_polydata(path):
 
 
 def parse_command_line(args):
+	'''
+
+	'''
 	
 	print 'parsing command line'
 
@@ -53,6 +40,7 @@ def parse_command_line(args):
 	parser.add_argument('--vtk', dest='vtk', action='store_true')
 	parser.add_argument('--mapping', dest='mapping', action='store_true')
 	parser.add_argument('--debug', dest='debug', action='store_true')
+	parser.add_argument('--post', dest='post', action='store_true')
 
 	parser.add_argument('--suff', action="store", type=str, default='p1')
 	
@@ -60,11 +48,12 @@ def parse_command_line(args):
 
 	return args
 
-def apply_bounding_box(centerline, points, offsets=np.array([.11, .13, .8])):
+
+def apply_bounding_box(centerline, points, offsets=np.array([.11, .15, .8])):
 	'''
 		apply a bounding box based on min/max in axis 0 of centerline to points, 
 		return the restricted indices
-
+		Apply some offsets to each direction so that we definitely get all the points that we're looking for 
 
 	'''
 
@@ -89,43 +78,15 @@ def apply_bounding_box(centerline, points, offsets=np.array([.11, .13, .8])):
 
 	return patch_index
 
-
-def prepare_chunks(idx, block_sz=100):
-	'''
-		input: 
-			* idx, an np array of indices 
-			* block_sz (optiona), the size of each partitioning block
-
-	'''
-	print 'preparing chunks'
-
-	total = len(idx)
-	print total
-	partitions = block_sz*np.arange(total//block_sz)[1:]
-	
-	print partitions
-	return partitions
-	# return np.split(idx, partitions)
-
-
-# def min_dist(points_results, points_source):
-
-# 	distances = np.sum((points_results - points_source[:, np.newaxis])**2, axis=2)
-# 	return np.argmin(distances, axis=0)
-
-
-def write_points_to_pkl(points_source, points_results, suff):
-	write_to_file('points_' + suff, (points_source, points_results))
-
+# def write_points_to_pkl(points_source, points_results, suff):
+# 	write_to_file('points_' + suff, (points_source, points_results))
 
 def main():
 
-
-	CONTINUE=True
 	args = parse_command_line(sys.argv)
 
-	# # we need the face to points correspondence from the original source model 
-	# # we only need to get this once 
+	# we need the face to points correspondence from the original source model 
+	# we only need to get this once 
 	(face_to_points, _, _, NoP) = read_from_file("big_boy")
 
 	points_source = None
@@ -152,7 +113,7 @@ def main():
 		_, points_source = extract_points(poly_source)
 		_, points_results = extract_points(poly_results)
 
-		write_points_to_pkl(points_source, points_results, args['suff'])
+		write_to_file('points_' + args['suff'], (points_source, points_results))
 
 	elif args['pkl']:
 
@@ -162,36 +123,30 @@ def main():
 
 	if args['mapping']:
 
-		# # load in the centerline
+		# load in the centerline
 		centerline = read_from_file('RCA_cl')
 		
 		# use the centerline to apply a bounding box to the points that we need to look at 
 		bounded_source_idx = apply_bounding_box(centerline, points_source)[0]
 		bounded_results_idx = apply_bounding_box(centerline, points_results)[0]
 
-		print points_results.shape
-		print bounded_results_idx.shape
-
-		print points_source.shape
-		print bounded_source_idx.shape
-
 		# chunk one of the arrays so that we don't run out of memory when we 
 		# perform the vectorized distance computation
 
-		#partitions = prepare_chunks(bounded_results_idx) 
-		mapping = np.zeros(points_results.shape[0])
-
 		block_sz = 150
 		n_splits = len(bounded_results_idx)//100
+
+		mapping = np.zeros(points_results.shape[0])
+
 		for i in range(n_splits):
 
-			print 'split', i
+			print '> split', i
 			cur_idx = bounded_results_idx[block_sz*i:block_sz*(i+1)]
 
 			if i == n_splits - 1:
 				cur_idx = bounded_results_idx[block_sz*i:]
 
-			_, mapping[cur_idx] = minimize_distances(points_results[cur_idx], points_source)
+			mapping[cur_idx], _ = minimize_distances(points_results[cur_idx], points_source)
 
 		write_to_file('mapping_'+args['suff'], mapping)
 
@@ -241,30 +196,30 @@ def main():
 
 	
 	if args['post']:
+		import vtk
+		from vtk.util import numpy_support as nps	
+		all_results_path = args['results']
+		poly_results = return_polydata(all_results_path)
+
 		vessel_ids, vessel_points = read_from_file('mapped_'+args['suff'])
 		# load in the centerline
 		centerline = read_from_file('RCA_cl')
 
 		# use normalization utils to map mesh points onto the centerline
-		wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(NoP, centerline, vessel_points)
+		wall_ref, _, wall_to_center, min_dists, centerline_length = projection(NoP, centerline, points_results, vessel_ids)
 
 		# get start and length from targets 
+		targets = read_targets(as_dict=True)
 
+		_, start, length, _ = targets[args['suff']]
 
+		end=start+length/centerline_length
 
+		wall_region, axial_pos, theta_pos, _, _ = obtain_expansion_region(wall_ref, NoP, vessel_ids, start=start, end=end)
+		
+		v_tawss = nps.vtk_to_numpy(poly_results.GetPointData().GetArray('vTAWSS'))
 
-
-
-	
-
-
-
-	# # use np where to identify roughly close points? 
-
-	# # 
-	# # slim down the source points
-
-
+		print np.mean(v_tawss[wall_region])
 
 
 
@@ -273,3 +228,6 @@ def main():
 
 if __name__ == "__main__":
 	main()
+
+
+

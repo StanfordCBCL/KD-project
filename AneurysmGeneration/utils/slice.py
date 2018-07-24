@@ -165,6 +165,58 @@ def extract_points(polydata):
 
 	return (NoP, points)
 
+def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.2, EPSILON=.01):
+	'''
+	input: 
+		* wall vtk polydata
+		* centerline as np array of xyz points
+		* optional region specification
+
+	output: 
+		* list of point IDs of wall points within region
+		* list of point IDs of centerline points within the region
+		* dictionary of wall point ID -> closest centerline point
+
+	Obtains the IDs of wall points and center points that are within the desired region. 
+	'''
+
+	print 'Obtaining the expansion region'
+	print '------------------------------'
+
+	wall_ref_axial = wall_ref[:, 0]
+	wall_ref_theta = wall_ref[:, 1]
+
+	# initialize datastructures
+	wall_region_id = []
+	start_id = []
+	end_id = []
+
+	axial_pos = []
+	theta_pos = []
+
+	# consider switching this for np.where in the future
+	for i in included_points:
+		if (wall_ref_axial[i] >= start) and (wall_ref_axial[i] <= end): 
+			wall_region_id.append(i)
+
+			if wall_ref_axial[i] < start + EPSILON:
+				start_id.append(i) 
+
+			if wall_ref_axial[i] > end - EPSILON:
+				end_id.append(i)
+
+	axial_pos = wall_ref[wall_region_id,0]
+	theta_pos = wall_ref[wall_region_id,1]
+
+	# report the number of border points identified:
+	# print 'the number of points in the start border: ', len(start_border)
+	# print 'the number of points in the end border: ', len(end_border)
+
+	print 'Done obtaining the expansion region'
+	print '-----------------------------------'
+
+	return (wall_region_id, axial_pos, theta_pos, start_id, end_id) 
+
 
 if __name__ == "__main__":
 
