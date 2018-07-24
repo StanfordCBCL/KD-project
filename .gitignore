@@ -11,3 +11,5 @@ Thumbs.db
 *.pyc
 *~
 *AllData
+AneurysmGeneration/test_environment/*.vtp
+*.facenames

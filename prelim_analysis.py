@@ -6,23 +6,25 @@ import numpy as np
 import sys
 import os
 from AneurysmGeneration.utils.batch import *
+from AneurysmGeneration.utils.normalization import *
+from AneurysmGeneration.utils.slice import *
 import argparse
 
 
-def extract_points(polydata):
-	'''
-		Given an input polydata, extract points into ndarray of shape (NoP, 3)
-	'''
+# def extract_points(polydata):
+# 	'''
+# 		Given an input polydata, extract points into ndarray of shape (NoP, 3)
+# 	'''
 
-	print 'extracting points'
+# 	print 'extracting points'
 
-	NoP = polydata.GetNumberOfPoints()
-	points = np.zeros((NoP, 3))
+# 	NoP = polydata.GetNumberOfPoints()
+# 	points = np.zeros((NoP, 3))
 
-	for i in range(NoP):
-		points[i] = polydata.GetPoints().GetPoint(i)
+# 	for i in range(NoP):
+# 		points[i] = polydata.GetPoints().GetPoint(i)
 
-	return points
+# 	return (NoP, points)
 
 
 def return_polydata(path):
@@ -47,17 +49,18 @@ def parse_command_line(args):
 	parser = argparse.ArgumentParser(description='lol')
 	parser.add_argument('--source', action="store", type=str, default="AneurysmGeneration/models/SKD0050/SKD0050_baseline_model_modified_p1.vtp")
 	parser.add_argument('--results', action="store", type=str, default="Artificial/RCA/p1/all_results.vtp")
-	parser.add_argument('--pkl', dest='feature', action='store_false')
-	parser.add_argument('--vtk', dest='feature', action='store_true')
+	parser.add_argument('--pkl', dest='pkl', action='store_true')
+	parser.add_argument('--vtk', dest='vtk', action='store_true')
 	parser.add_argument('--mapping', dest='mapping', action='store_true')
+	parser.add_argument('--debug', dest='debug', action='store_true')
+
 	parser.add_argument('--suff', action="store", type=str, default='p1')
-	parser.set_defaults(feature=True)
 	
 	args = vars(parser.parse_args())
 
 	return args
 
-def apply_bounding_box(centerline, points, offsets=np.array([.07, .07, .07])):
+def apply_bounding_box(centerline, points, offsets=np.array([.11, .15, .8])):
 	'''
 		apply a bounding box based on min/max in axis 0 of centerline to points, 
 		return the restricted indices
@@ -107,7 +110,7 @@ def prepare_chunks(idx, block_sz=100):
 
 def min_dist(points_results, points_source):
 
-	distances = np.sqrt(((points_results - points_source[:, np.newaxis])**2).sum(axis=2))
+	distances = np.sum((points_results - points_source[:, np.newaxis])**2, axis=2)
 	return np.argmin(distances, axis=0)
 
 
@@ -128,7 +131,7 @@ def main():
 	points_source = None
 	points_results = None
 
-	if args['feature']: 
+	if args['vtk']: 
 		source_model_path = args['source']
 		all_results_path = args['results']
 
@@ -146,17 +149,19 @@ def main():
 		print 'the gnid array has shape', gNid_array.shape
 
 		# extract the raw points from the polydata
-		points_source = extract_points(poly_source)
-		points_results = extract_points(poly_results)
+		_, points_source = extract_points(poly_source)
+		_, points_results = extract_points(poly_results)
 
 		write_points_to_pkl(points_source, points_results, args['suff'])
 
-	else:
+	elif args['pkl']:
+
 		'reading points from pickle'
 		points_source, points_results = read_from_file('points_' + args['suff'])
 
 
 	if args['mapping']:
+
 		# # load in the centerline
 		centerline = read_from_file('RCA_cl')
 		
@@ -176,7 +181,7 @@ def main():
 		#partitions = prepare_chunks(bounded_results_idx) 
 		mapping = np.zeros(points_results.shape[0])
 
-		block_sz = 100
+		block_sz = 150
 		for i in range(len(bounded_results_idx)//100):
 
 			print 'split', i
@@ -185,9 +190,66 @@ def main():
 
 		write_to_file('mapping_'+args['suff'], mapping)
 
+		vessel_ids = []
+		mapped = np.zeros(mapping.shape[0])
+		for c, cand in enumerate(mapping):
+			if cand in face_to_points[8]:
+				mapped[c] = 1
+				vessel_ids.append(c)
+
+		vessel_points = points_results[vessel_ids]
+
+		write_to_file('mapped_'+args['suff'], (vessel_ids, vessel_points))
+
 			
+	if args['debug']:
+
+		import vtk
+		from vtk.util import numpy_support as nps
+
+		mapping = read_from_file('mapping_'+args['suff'])
+
+		print len(np.unique(mapping))
+		print np.unique(np.isin(mapping, list(face_to_points[8])), return_counts=True)
+		print np.where(
+			np.isin(
+				mapping, 
+				face_to_points[8]
+				)
+			)
+		mapped = np.zeros(mapping.shape[0])
+		for c, cand in enumerate(mapping):
+			if cand in face_to_points[8]:
+				mapped[c] = 1
+		# mapping[np.isin(mapping, face_to_points[8])] = 2
+		mapping_vtk = nps.numpy_to_vtk(mapped)
+		mapping_vtk.SetName('Mapped')
+
+		all_results_path = args['results']
+		poly_results = return_polydata(all_results_path)
+		poly_results.GetPointData().AddArray(mapping_vtk)
+
+		new=vtk.vtkXMLPolyDataWriter()
+		new.SetInputData(poly_results)
+		new.SetFileName('temp_'+ args['suff'] + '.vtp' )
+		new.Write()
 
 	
+	if args['post']:
+		_, vessel_points = read_from_file('mapped_'+args['suff'])
+		# load in the centerline
+		centerline = read_from_file('RCA_cl')
+
+		# use normalization utils to map mesh points onto the centerline
+		wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(NoP, centerline, vessel_points)
+
+		# get start and length from targets 
+
+		
+
+
+
+
 	
 
 

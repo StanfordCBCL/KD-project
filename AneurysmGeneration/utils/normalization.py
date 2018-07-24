@@ -152,7 +152,7 @@ def compute_theta(r, n, t):
 	return arctan_rn
 
 
-def projection(wall, centerline, included_points):
+def projection(NoP, centerline, vessel_points):
 	'''
 		input: 
 			* wall polydata 
@@ -174,8 +174,6 @@ def projection(wall, centerline, included_points):
 	print 'projecting wall points onto the centerline'
 	print '------------------------------------------'
 
-
-	NoP_wall = wall.GetNumberOfPoints()
 	NoP_center, normalized_center, centerline_length = normalized_centerline_pth(centerline)
 	
 
@@ -187,19 +185,18 @@ def projection(wall, centerline, included_points):
 	reference_norms, reference_tangents = compute_reference_norm(centerline)
 
 	# initialize wall axial pos
-	transformed_wall_ref = np.zeros((NoP_wall, 2))
+	transformed_wall_ref = np.zeros((NoP, 2))
 
 	wall_to_center = {}
-	min_dists = np.zeros((NoP_wall, 1))
+	min_dists = np.zeros((NoP, 1))
 
-	for i in included_points:
-		wall_pt = wall.GetPoints().GetPoint(i)
-
+	for i in range(vessel_points.shape[0]):
+		wall_pt = vessel_points[i]
 		min_dist = float('inf')
 		min_idx = -1
 		for k in range(NoP_center):
 			center_pt = centerline[k]
-			cur_dist = vtk.vtkMath.Distance2BetweenPoints(wall_pt, center_pt)
+			cur_dist = np.linalg.norm(wall_pt-center_pt)
 			if cur_dist < min_dist:
 				min_dist = cur_dist
 				min_idx = k
@@ -211,7 +208,8 @@ def projection(wall, centerline, included_points):
 #		transformed_wall_ref[i, 1] = compute_theta(r, n, t)
 
 		wall_to_center[i] = centerline[min_idx]
-		min_dists[i] = np.sqrt(min_dist)
+		min_dists[i] = min_dist
+		# min_dists[i] = np.sqrt(min_dist)
 
 	return (transformed_wall_ref, normalized_center, wall_to_center, min_dists, centerline_length)
 

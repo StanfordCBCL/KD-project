@@ -150,6 +150,21 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_model=None
 	return (face_to_points, cap_to_points, point_connectivity, NoP)
 
 
+def extract_points(polydata):
+	'''
+		Given an input polydata, extract points into ndarray of shape (NoP, 3)
+	'''
+
+	print 'extracting points'
+
+	NoP = polydata.GetNumberOfPoints()
+	points = np.zeros((NoP, 3))
+
+	for i in range(NoP):
+		points[i] = polydata.GetPoints().GetPoint(i)
+
+	return (NoP, points)
+
 
 if __name__ == "__main__":
 

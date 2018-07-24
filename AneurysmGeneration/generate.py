@@ -99,11 +99,11 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	wall_model = wallreader.GetOutput()
 
 	included_points = face_to_points[cur_face]
-	NoP_wall = wall_model.GetNumberOfPoints()
+	NoP_wall, wall_points = extract_points(wall_model)
 
 	centerline=read_from_file('RCA_cl')
 
-	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(wall_model, centerline, included_points)
+	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(NoP_wall, centerline, wall_points[list(included_points)])
 
 	# compute the normalized length -> normalized end position
 	end=start+length/centerline_length
@@ -236,7 +236,7 @@ def main():
 	# note: this matches centerline name against its faceID 
 	corresponding_faces, face_list = parse_facenames(names, model_dir)
 
-
+	print corresponding_faces
 
 	# find the points corresponding to each relevant face ID and each cap ID
 	# note: face_to_points is from faceID to list of pointID
