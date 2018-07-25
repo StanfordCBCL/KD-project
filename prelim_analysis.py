@@ -221,6 +221,22 @@ def main():
 
 		print np.mean(v_tawss[wall_region])
 
+	if args['clip']:
+		# get start and end point regions 
+
+		# a single clip plane is defined by an origin and a normal
+		# the origin can be computed as the average position of a ring of points 
+		# the normal can be computed as the average of the cross products of radial vectors
+		# we can take origin = origin + (-ds)*n for a small ds in order to make sure that all the points from the origin
+		# that we wanted to icnlud eare included 
+
+		# compute the aneurysm span as the origin2 - origin1 
+
+		# using the maximal radius 
+
+		# build the geometry using boolean operation on an ellipsoid and two planes 
+		# define the ellipsoid using the centroid of the point cloud 
+
 
 
 
