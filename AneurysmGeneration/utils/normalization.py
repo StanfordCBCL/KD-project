@@ -157,7 +157,6 @@ def compute_theta(r, n, t):
 	cos_rn = (r*n).sum(axis=1)
 	cos_rn = np.divide(cos_rn, mag_r)
 	cos_rn = np.divide(cos_rn, mag_n)
-#	/mag_r/mag_n
 
 	# compute sin 
 	cx = np.cross(r, n)

@@ -150,9 +150,11 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_model=None
 	return (face_to_points, cap_to_points, point_connectivity, NoP)
 
 
-def extract_points(polydata):
+def extract_points(polydata, pointIDs=None):
 	'''
 		Given an input polydata, extract points into ndarray of shape (NoP, 3)
+
+		Optional pointIDs allows for return of only points corresponding to those pointIDs
 	'''
 
 	print 'extracting points'
@@ -163,7 +165,10 @@ def extract_points(polydata):
 	for i in range(NoP):
 		points[i] = polydata.GetPoints().GetPoint(i)
 
-	return (NoP, points)
+	if pointIDs is None:
+		return (NoP, points)
+	else: 
+		return points[pointIDs]
 
 def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.2, EPSILON=.01):
 	'''
@@ -190,9 +195,6 @@ def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.
 	wall_region_id = []
 	start_id = []
 	end_id = []
-
-	axial_pos = []
-	theta_pos = []
 
 	# consider switching this for np.where in the future
 	for i in included_points:

@@ -13,3 +13,9 @@ Thumbs.db
 *AllData
 AneurysmGeneration/test_environment/*.vtp
 *.facenames
+Artificial/
+clipped_results/
+html/
+AneurysmGeneration/pickles/*
+smooth_boys*/
+.ipynb_checkpoints/
