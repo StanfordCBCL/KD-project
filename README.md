@@ -13,7 +13,7 @@ The full pathway is
 5. map mesh and model points 
 6. use mapping to extract relevant region and clip out the aneurysm for analysis 
 
-`Aneurysm Generation` corresponds to step 1 , `batch_clip.sh` and `prelim_analysis.py` correspond to step 5-6. 
+`AneurysmGeneration` corresponds to step 1 , `batch_clip.sh` and `prelim_analysis.py` correspond to step 5-6. 
 
 
 The desired analysis is: 

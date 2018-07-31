@@ -8,14 +8,26 @@
 ehthumbs.db
 Thumbs.db
 
+# compiled py 
 *.pyc
+
+# random change things
 *~
+
+# no need to upload these
 *AllData
 AneurysmGeneration/test_environment/*.vtp
+AneurysmGeneration/pickles/*
 *.facenames
 Artificial/
 clipped_results/
-html/
-AneurysmGeneration/pickles/*
+
+# keep simvascular projects local
 smooth_boys*/
+oops/
+
+# no need to upload matlab stuff
+html/
+
+# nono
 .ipynb_checkpoints/
