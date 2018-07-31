@@ -5,33 +5,41 @@ We want to artificially generate realistic aneurysms.
 
 ## Current progress: 
 
-A script has been written to expand the shell points to produce an aneurysm-like shape which is radially symmetric about the cross section. 
+The full pathway is 
+1. generate aneurysms 
+2. mesh the aneurysm model 
+3. run simulation on Sherlock
+4. post process results
+5. map mesh and model points 
+6. use mapping to extract relevant region and clip out the aneurysm for analysis 
 
-Further steps will be taken to generate different kinds of shapes. 
-
-![simple expansion](AneurysmGeneration/screenshots/progress_1_12.png)
-
-Progress was also made to increase the smoothness of the aneurysm surface. Initially, the number of centerline points was insufficient, and many points along the vessel surface were mapping to the same centerline coordinate. Increasing the number of centerline points allows for a smoother-looking surface post-expansion. 
-
-![smoother expansion](AneurysmGeneration/screenshots/progress_1_12_2.png)
-
-Implementation of clamped boundary conditions allows for a smoother transition zone (zero first derivative) into healthy coronary vessel. 
-
-![clamped bc example](AneurysmGeneration/screenshots/progress_1_19.png)
-
-As of 2/1/2018: Full model generation kind of works! Shapes are awkward but full model is workable. 
-
-![expansion of RCA](AneurysmGeneration/screenshots/progress_2_1.png)
-![WT of RCA](AneurysmGeneration/screenshots/progress_2_1_2.png)
+`Aneurysm Generation` corresponds to step 1 , `batch_clip.sh` and `prelim_analysis.py` correspond to step 5-6. 
 
 
+The desired analysis is: 
+* Time-averaged Wall Shear Stress (TAWSS) as a function of Z-score/position
+* Range of TAWSS as a function of Z-score/position
+* CDF of TAWSS/area. 
+
+## Methods 
+### Dependencies: 
+* `vtk`
+* `numpy`
+* `scipy`
+* `matplotlib`
+* `argparse`
+
+### Generation 
+A script has been written to manipulate the points of the model vtp file to produce an aneurysm-like shape which is radially symmetric about the cross section. It is possible to specify the aneurysm shape and length to fit different shape indices. It is possible to control the position along the vessel. 
+
+The current method involves interpolation of radius as a function of path length, and does not consider path curvature or the underlying radial distribution in the Frenet-Serre frame; the result is potentially off-center aneurysms with non-smooth expansion and contraction at the inflow and outflow. Code has also been developed for 2-D interpolation that maps (s, theta) -> r, but the interpolating function is not well behaved. The current workaround is boolean expansion as max(original radius, new radius) coupled with smoothing in Simvascular after aneurysm generation. 
+
+### Post Processing
+Read in the parameters that were used to generate the actual aneurysm, then map the points from the mesh to the model to extract the right branch. From the right branch, we can isolate the points corresponding to the aneurysm. From this, we can define two `vtkPlane`s and cut the aneurysm. The true aneurysmal region, and not any other part of the model, will be identified using a `vtkConnectivityFilter`. 
 
 
-### Notes:
-* discovered that the model looked ribbed because there were not enough points in the centerline; centerline points increased.
-* ridge when bc is not 0 looks really awkward; now using 1D cubic spline interpolation allowing zero-derivative boundary conditions.  
+### Todo: 
+* The left sided centerline is questionable? And also the branching over there is much more complicated to handle. Will potentially develop a better method for introducing the aneurysm. 
+* A current issue is that the smoothing operations take significant manual effort because the expansion does not produce new surface points, and thus stretches the existing elements. Potentially requires coupling with some sort of vtkdensifypoints or whatever it's called. 
 
 
-
-### Next steps: 
-* 
