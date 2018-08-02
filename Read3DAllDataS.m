@@ -4,8 +4,8 @@ close all;
 
 pConv = 1334;
 
-suffix = 'm2';
-name3D = '~/Documents/lab/KD-project/Artificial/RCA/m2/AllData' ; 
+suffix = 'd4';
+name3D = '~/Documents/lab/KD-project/Artificial/RCA/d4/AllData' ; 
 
 % Set overall parameters
 
@@ -134,7 +134,7 @@ ax.FontSize = 12;
 % save the produced figures to a set location 
 for f = 1:numel(figures)
     fig = figures(f);
-    filename = sprintf('Artificial/RCA/%s/Figure%02d_%s.pdf', suffix, f, suffix);
+    filename = sprintf('Artificial/RCA/%s/Figure%02d_%s.png', suffix, f, suffix);
     print( fig, '-dpng', filename );
 end
 
@@ -179,14 +179,17 @@ Q_rcor3D = 0;
     Pao_min3D = min(AllData(endStep_3D-singleCycle_3D:endStep_3D,10));
     %Pao_mean3D = mean(AllData(endStep_3D-singleCycle_3D:endStep_3D,10));
     
-    fprintf('\n --- 3D RESULTS for %s --- \n', suffix);
-    fprintf('Qinlet = %8.3f ml/cycle\n',abs(Qinlet3D));
-    fprintf('SV = %8.3f ml \n',SV);
-    fprintf('Total Q out = %8.3f ml/cycle\n',Total_Q_out);
-    fprintf('Ao-Cor-Split = %8.3f %%\n',Aor_Cor_split3D);
-    fprintf('L_R_Cor_Split = %8.3f %%\n',L_R_corsplit3D);
-    fprintf('Pao_max = %8.3f mmHg\n',Pao_max3D);
-    fprintf('Pao_min = %8.3f mmHg\n',Pao_min3D);
+    % print the results to text file
+    filename = 'Artificial/RCA/3D_results.txt';
+    fid = fopen(filename, 'a+');
+    fprintf(fid, '\n --- 3D RESULTS for %s --- \n', suffix);
+    fprintf(fid, 'Qinlet = %8.3f ml/cycle\n',abs(Qinlet3D));
+    fprintf(fid, 'SV = %8.3f ml \n',SV);
+    fprintf(fid, 'Total Q out = %8.3f ml/cycle\n',Total_Q_out);
+    fprintf(fid, 'Ao-Cor-Split = %8.3f %%\n',Aor_Cor_split3D);
+    fprintf(fid, 'L_R_Cor_Split = %8.3f %%\n',L_R_corsplit3D);
+    fprintf(fid, 'Pao_max = %8.3f mmHg\n',Pao_max3D);
+    fprintf(fid, 'Pao_min = %8.3f mmHg\n',Pao_min3D);
     %fprintf('Pao_mean = %8.3f mmHg\n',Pao_mean3D);
 
 

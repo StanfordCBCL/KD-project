@@ -25,6 +25,7 @@ clipped_results/
 # keep simvascular projects local
 smooth_boys*/
 oops/
+baseline/
 
 # no need to upload matlab stuff
 html/
