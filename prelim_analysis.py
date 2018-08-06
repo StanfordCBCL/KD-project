@@ -348,22 +348,10 @@ def main():
 
 			print span
 
-			# radial_start = points_start - origin_start
-			# radial_end = points_end - origin_end
-
-			# normal_start = np.cross(radial_start[0], radial_start[1])
-			# normal_end = np.cross(radial_end[0], radial_end[2])
-
-			# normal_start /= np.linalg.norm(normal_start)*np.sign(np.dot(normal_start, span))
-			# normal_end /= np.linalg.norm(normal_end)*np.sign(np.dot(normal_end, span))
-
-			# print normal_start
-			# now, we have enough to build the clipper planes
-
-			alpha = .02
 			# shift the origin by a bit 
-			origin_start -= span*alpha
-			origin_end += span*alpha
+			alpha = .02
+			origin_start += span*alpha
+			origin_end -= span*alpha
 
 			# define planes
 			plane_start = vtk.vtkPlane()
@@ -388,15 +376,11 @@ def main():
 			extract_end.PassPointsOn()
 			extract_end.Update()
 
-			# we may have to; 
-			# we can take origin = origin + (-ds)*n for a small ds in order to make sure that all the points from the origin
-			# that we wanted to icnlud eare included 
-
 			# next, we want to use a connectivity filter with SetExtractionModeToPointSeededRegions()
 			connect = vtk.vtkPolyDataConnectivityFilter()
 			connect.SetInputData(extract_end.GetOutput())
 			connect.SetExtractionModeToPointSeededRegions()
-			connect.AddSeed(wall_region[100]) # use an arbitrary point id from within the wall region to seed the connectivity filter
+			connect.AddSeed(wall_region[len(wall_region)/2]) # use an arbitrary point id from within the wall region to seed the connectivity filter
 			connect.Update()
 
 			region = connect.GetOutput()
@@ -404,7 +388,7 @@ def main():
 			# now we write it out and pray that it worked
 			clipped_writer = vtk.vtkXMLPolyDataWriter()
 			clipped_writer.SetInputData(region)
-			clipped_writer.SetFileName('clipped_results/RCA/'+ args['suff'] +'.vtp')
+			clipped_writer.SetFileName('clipped_results_short/RCA/'+ args['suff'] +'.vtp')
 			clipped_writer.Write()
 
 			
