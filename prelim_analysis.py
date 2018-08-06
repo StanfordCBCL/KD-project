@@ -366,6 +366,7 @@ def main():
 			extract_start = vtk.vtkExtractPolyDataGeometry()
 			extract_start.SetInputData(poly_results)
 			extract_start.SetImplicitFunction(plane_start)
+			extract_start.SetExtractBoundaryCells(True)
 			extract_start.PassPointsOn()
 			extract_start.Update()
 
@@ -380,10 +381,13 @@ def main():
 			connect = vtk.vtkPolyDataConnectivityFilter()
 			connect.SetInputData(extract_end.GetOutput())
 			connect.SetExtractionModeToPointSeededRegions()
-			connect.AddSeed(wall_region[len(wall_region)/2]) # use an arbitrary point id from within the wall region to seed the connectivity filter
+			connect.AddSeed(wall_region[100])
+			# connect.AddSeed(wall_region[len(wall_region)/2]) # use an arbitrary point id from within the wall region to seed the connectivity filter
 			connect.Update()
 
 			region = connect.GetOutput()
+
+			print region.GetNumberOfPoints()
 
 			# now we write it out and pray that it worked
 			clipped_writer = vtk.vtkXMLPolyDataWriter()
