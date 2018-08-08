@@ -48,7 +48,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	included_points = face_to_points[cur_face]
 	NoP_wall, wall_points = extract_points(wall_model)
 
-	centerline=read_from_file('RCA_cl')
+	# centerline=read_from_file('RCA_cl')
 
 	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(NoP_wall, centerline, wall_points, np.array(list(included_points)))
 
@@ -61,11 +61,8 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	start_radii, end_radii = min_dists[start_id], min_dists[end_id]
 	adjust = centerline_shift(start_id, end_id, axial_pos, wall_model, wall_to_center[start_id[0]], wall_to_center[end_id[-1]])
 	print adjust
-	#print start_radii
-	#print end_radii
 
 	affected_face_displace, intersect = organize_intersections(wall_region, point_to_face, cur_face)
-	
 
 	expand = interpolated_points(axial_pos, 
 								(min(axial_pos), max(axial_pos)), 
@@ -78,7 +75,9 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 	expand_np = np.zeros((1, wall_model.GetNumberOfPoints() ))
 
-
+	print len(wall_region)
+	a = intersect.keys()
+	print intersect.keys()
 	for i, pointID in enumerate(wall_region):
 
 		cur_pt = wall_model.GetPoints().GetPoint(pointID)
@@ -94,7 +93,9 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 		elif expansion_mode == 'absolute':
 
-			if expand[i] < min_dists[pointID]: continue
+			if expand[i] < min_dists[pointID]: 
+				print '> skipping on pointID ', pointID
+				expand[i] = min_dists[pointID]
 
 	 		wall_unit = [xi/min_dists[pointID] for xi in wall_normal]
 			displace = [r*expand[i] for r in wall_unit]
@@ -106,6 +107,14 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 		# to accomodate shifting of branches 
 		displace_adjusted = [d - n for (d, n) in zip (displace, wall_normal)]
 
+		if pointID in intersect.keys():
+			print '> recording disp for prop to this face:', intersect[pointID]
+			affected_face_displace[intersect[pointID]].append(np.array(displace_adjusted))
+
+		# for intersect_pt, corr_face in intersect.iteritems():
+		# 	if intersect_pt == pointID:
+				
+
 		# alter the current point's coordinates to reflect expansion
 		wall_model.GetPoints().SetPoint(pointID, new_pt)
 
@@ -114,10 +123,10 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 		# keep track of the displacement vectors affecting branch roots so that we know how much to shift
 		# the branches
-		if pointID in intersect.keys():
-			affected_face_displace[intersect[pointID]].append(np.array(displace_adjusted))
 
 
+
+	print intersect		
 	print '>>>  the maximum displacement: ', np.max(expand_np)
 
 	shift_branches(wall_model, wall_region, intersect.keys(), affected_face_displace, face_to_cap, face_to_points, point_connectivity, easing)
@@ -162,7 +171,7 @@ def main():
 	EASING = False
 	PICKLE = False
 	FROM_PICKLE = True
-	BATCH = False
+	BATCH = True
 	PLOT_CL = False
 
 	# be lazy -- hard code the exclude, face, and cap list

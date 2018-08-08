@@ -25,8 +25,11 @@ def shift_branches(wall_model, wall_region, intersection, affected_face_displace
 	print 'Preparing to shift branches'
 	print '------------------------------'
 
+
 	# consolidate affected branch displacements
 	for faceID, displace_list in affected_face_displace.iteritems():
+
+		print '> for face id ', faceID, 'the displace_list contains ', len(displace_list), ' vecs'
 
 		# compute the L2 norms of each displacement vector; select single displacement with the largest L2 norm
 		# displace_idx = np.argmax([np.sqrt(x**2 + y**2 + z**2) for (x,y,z) in displace_list])
@@ -40,21 +43,77 @@ def shift_branches(wall_model, wall_region, intersection, affected_face_displace
 	for faceID, displace in affected_face_displace.iteritems():
 		cap_points = face_to_cap[faceID]
 		vessel_points = face_to_points[faceID] - set(wall_region)
+		branch_ids = cap_points.union(vessel_points)
 
-		for pointID in cap_points.union(vessel_points):
+		for pointID in branch_ids:
 			cur_pt = wall_model.GetPoints().GetPoint(pointID)
 			new_pt = [r + boost*dr for (r, dr) in zip(cur_pt, displace)]
 			wall_model.GetPoints().SetPoint(pointID, new_pt)
 
+		branch_tilt(wall_model, , , branch_ids)
+
 		if easing:
 			branch_easing(wall_model, intersection, vessel_points, point_connectivity)	
+
+
 
 	print 'Done shifting branches'
 	print '------------------------'
 	return 
 
 
+def branch_tilt(wall_model, inletIDs, original_positions, branch_ids):
+	'''
+		
+		basically we're going to colelct all the displacement values
+		and find some way to approximate the angle of this inlet plane 	
+
+		input: 
+			* wall_model, the underlying polydata
+			* inletIDs, the set of pointIDs corresponding to the inlet of the branch that we're operating on
+			* original_positions, the np array of shape (npoints, 3) that corresponds to unshifted positions
+			* branch_ids, the set of pointIDs corresponding to the entire branch we're operating on 
+
+	'''
+	print 'Preparing to tilt branches'
+	print '--------------------------'
+
+	posts = extract_points(wall_model, pointIDs=inletIDs)
+
+	# compute the normal of inlet pre-displacement
+	original_positions -= np.mean(original_positions, axis=0)
+	u_original,_,_ = np.linalg.svd(original_positions.T)
+	normal_original = u_original[-1]
+
+	# compute the normal of inlet post-displacement 
+	posts -= np.mean(posts, axis=0)
+	u_post,_,_ = np.linalg.svd(posts.T)
+	normal_post = u_post[-1]
+
+	# determine how much to tilt 
+	tilt = np.diag(normal_post/normal_original)
+
+	# tilt branch 
+	branch = extract_points(wall_model, pointIDs=branch_ids)
+	branch -= np.mean(posts, axis=0)
+	new_branch = np.dot(branch, tilt.T)
+	new_branch += np.mean(posts, axis=0)
+
+	# save tilts
+	for pointID, point in zip(branch_ids, branch):
+		wall_model.GetPoints().SetPoint(pointID, point)
+
+
+	print 'done tilting branches'
+	print '---------------------'
+	return
+
+
 def branch_easing(wall_model, intersection, vessel_points, point_connectivity, num_iterations=4, aggress=.5):
+	'''
+
+		an iterative point-moving solution to awkward branch movements
+	'''
 
 	print 'Preparing to perform branch easing'
 	print '----------------------------------'
@@ -102,7 +161,10 @@ def organize_intersections(wall_region, point_to_face, cur_face):
 		Adjusts data strctures to record the pointIDs at the intersection of branching vessels and initialize 
 		storage for the average displacement of the affected faces. 
 	'''
+	print 'organizing intersections against', cur_face
+	print '----------------------------------------'
 
+	print len(wall_region)
 	intersect = {}
 	affected_face_set = set()
 
@@ -113,6 +175,9 @@ def organize_intersections(wall_region, point_to_face, cur_face):
 				if face != cur_face:
 					intersect[pt] = face
 					affected_face_set.add(face)
+
+	print 'organized intersections, the affected face set is ', affected_face_set
+	print '--------------------------------'
 
 	affected_face_displace = {faceID:[] for faceID in affected_face_set}
 
