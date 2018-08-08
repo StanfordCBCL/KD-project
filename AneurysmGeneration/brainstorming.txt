@@ -1,0 +1,32 @@
+BRAINSTORMING DOCUMENT
+
+Idea: tilt the branching vessel depending on the extent of displacement to its inlet
+
+collect all displacements as (displacement, original position, final position)
+so the data structure that we actually end up needing is: 
+(displacement, [original position], [final position], pointID)
+sort on the displacement 
+
+### This part is really ad hoc because it's like based on having the vessel branch from either the expansion or contraction regions, 
+(probably won't work too well if the initial branching region is straight)
+
+So that if we have osmething like | -> \ we will be able to approximate slope of the old and new inlet planes
+using the difference in average position of (more displace, less displace) groups
+
+given the slopes of the old and new inlet planes, we can approximate the rotation we need to apply to the points in the branch vessel as 
+arccos(dot(u, v)/norm(u)/norm(v))
+and then we just gotta apply this rotation to all the points 
+
+applying the rotation: 
+	* broadcast subtraction of post-deformation inlet centroid position across points in branching vessel
+		pts_branch -= centroid_inlet_post
+	* get the transformation matrix as 
+		T = np.diag(centroid_inlet_post/centroid_inlet_pre)
+	* apply the transformation matrix to the point cloud
+		new = pts_branch.dot(T.T)
+	* add the post-deformation inlet centroid position back to the transformed points
+		new += centroid_inlet_post
+
+
+now, we should have the rotated points. we just need to set these back into our original polydata! 
+

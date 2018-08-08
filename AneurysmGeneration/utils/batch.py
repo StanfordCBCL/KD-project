@@ -45,7 +45,7 @@ def read_from_file(name):
 	return new_obj
 
 
-def read_targets(fname='/AneurysmGeneration/targets.txt', as_dict=False):
+def read_targets(fname='/AneurysmGeneration/left_targets.txt', as_dict=False):
 	'''
 	reads a file called targets.txt that contains: 
 	[vessel id] [start pos] [length] [rad_max] [suffix] 
