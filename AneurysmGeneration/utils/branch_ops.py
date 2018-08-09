@@ -17,8 +17,18 @@ from slice import *
 from batch import *
 
 
-def shift_branches(wall_model, wall_region, intersection, affected_face_displace, face_to_cap, face_to_points, point_connectivity, easing, boost=1.0):
+def shift_branches(wall_model, wall_region, intersection, originals, affected_face_displace, face_to_cap, face_to_points, point_connectivity, easing, boost=1.0):
 	'''
+		inputs: 
+			* wall_model, 				polydata of whole model
+			* wall_region, 				list of pointIDs composing the OG main vessel that we're modifying (one of LAD, RCA, cfx)
+			* intersection, 			dict {faceID: [ list of pointIDs in a branching vessel that also belong to main vessel]}
+			* originals,				dict {faceID: np array of original point positions of inlets of that face}
+			* affected_face_displace, 	dict {faceID: [list of displacement vectors (?) applied to this branch inlet]}
+			* face_to_cap, 				dict {faceID: [list of pointIDs in cap at the end of the vessel labeled by faceID]}
+			* point_connectivity, 		dict {pointID: [pointIDs that this point is in cell w/ ]}
+			* easing, 					boolean, describes whether branch easing algorithm should be applied
+			* boost, 					float, corresponding to scalar in front of branch shifting amount
 
 	'''
 
@@ -36,6 +46,7 @@ def shift_branches(wall_model, wall_region, intersection, affected_face_displace
 		#average_displace = np.max(np.array(displace_list), axis=0)
 
 		# affected_face_displace[faceID] = displace_list[displace_idx]
+
 		# apply the mean displacement in each dimension
 		affected_face_displace[faceID] = np.mean(displace_list, axis=0)
 
@@ -50,7 +61,7 @@ def shift_branches(wall_model, wall_region, intersection, affected_face_displace
 			new_pt = [r + boost*dr for (r, dr) in zip(cur_pt, displace)]
 			wall_model.GetPoints().SetPoint(pointID, new_pt)
 
-		branch_tilt(wall_model, , , branch_ids)
+		wall_model = branch_tilt(wall_model, intersection[faceID], originals[faceID], list(branch_ids))
 
 		if easing:
 			branch_easing(wall_model, intersection, vessel_points, point_connectivity)	
@@ -59,6 +70,7 @@ def shift_branches(wall_model, wall_region, intersection, affected_face_displace
 
 	print 'Done shifting branches'
 	print '------------------------'
+
 	return 
 
 
@@ -86,27 +98,59 @@ def branch_tilt(wall_model, inletIDs, original_positions, branch_ids):
 	normal_original = u_original[-1]
 
 	# compute the normal of inlet post-displacement 
-	posts -= np.mean(posts, axis=0)
-	u_post,_,_ = np.linalg.svd(posts.T)
+	posts_zero_center = posts - np.mean(posts, axis=0)
+	u_post,_,_ = np.linalg.svd(posts_zero_center.T)
 	normal_post = u_post[-1]
 
 	# determine how much to tilt 
-	tilt = np.diag(normal_post/normal_original)
+	crossed = np.cross(normal_original, normal_post)
+	G = np.array([
+				[np.dot(normal_original, normal_post), -1*np.linalg.norm(crossed), 0],
+				[np.linalg.norm(crossed), np.dot(normal_original, normal_post), 0 ], 
+				[0, 0, 1]
+				])
+
+	vec_rejec = normal_post - (np.dot(normal_original, normal_post)*normal_original)
+	vec_rejec /= np.linalg.norm(vec_rejec)
+
+	Finv = np.zeros(G.shape)
+	Finv[:,0] = normal_original
+	Finv[:,1] = vec_rejec
+	Finv[:,2] = -1*crossed
+
+	tilt = np.matmul(Finv,G) 
+	tilt = np.matmul(tilt, np.linalg.inv(Finv) )
+
+	print '===================='
+	print 'the tilt matrix is:'
+	print tilt
+	print 'normal original is:'
+	print normal_original
+	print 'normal post is:'
+	print normal_post
+	print 'testing tilt'
+	print np.dot(tilt, normal_original)
+	print 'F'
+	print Finv
+	print 'G'
+	print G
+	print '===================='
 
 	# tilt branch 
 	branch = extract_points(wall_model, pointIDs=branch_ids)
 	branch -= np.mean(posts, axis=0)
-	new_branch = np.dot(branch, tilt.T)
+	new_branch = np.dot(branch, tilt)
 	new_branch += np.mean(posts, axis=0)
 
 	# save tilts
-	for pointID, point in zip(branch_ids, branch):
+	for pointID, point in zip(branch_ids, new_branch):
 		wall_model.GetPoints().SetPoint(pointID, point)
 
 
 	print 'done tilting branches'
 	print '---------------------'
-	return
+
+	return wall_model
 
 
 def branch_easing(wall_model, intersection, vessel_points, point_connectivity, num_iterations=4, aggress=.5):
@@ -155,7 +199,6 @@ def branch_easing(wall_model, intersection, vessel_points, point_connectivity, n
 	print '-----------------------'
 
 
-
 def organize_intersections(wall_region, point_to_face, cur_face):
 	'''
 		Adjusts data strctures to record the pointIDs at the intersection of branching vessels and initialize 
@@ -181,7 +224,10 @@ def organize_intersections(wall_region, point_to_face, cur_face):
 
 	affected_face_displace = {faceID:[] for faceID in affected_face_set}
 
-	return (affected_face_displace, intersect)
+	new_intersect = {face: [] for face in intersect.values()}
+	for pt, face in intersect.iteritems(): new_intersect[face].append(pt)
+
+	return (affected_face_displace, new_intersect)
 
 
 def centerline_shift(start_id, end_id, axial_pos, wall_model, cl_start, cl_end):
