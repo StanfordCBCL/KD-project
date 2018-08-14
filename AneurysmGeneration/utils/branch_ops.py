@@ -47,8 +47,15 @@ def shift_branches(wall_model, wall_region, intersection, originals, affected_fa
 
 		# affected_face_displace[faceID] = displace_list[displace_idx]
 
-		# apply the mean displacement in each dimension
-		affected_face_displace[faceID] = np.mean(displace_list, axis=0)
+		# get the mean displacement as the direction  
+		average_displace = np.mean(displace_list, axis=0)
+		# scale the mean displacement to preserve magnitude 
+		average_displace /= np.linalg.norm(average_displace)
+		average_displace *= np.linalg.norm(np.max(displace_list, axis=0))
+		
+		affected_face_displace[faceID] = average_displace
+		
+		#affected_face_displace[faceID] = np.mean(displace_list, axis=0)
 
 	# apply displacement to affected branches and associated caps
 	for faceID, displace in affected_face_displace.iteritems():

@@ -21,11 +21,11 @@ AneurysmGeneration/pickles/*
 *.facenames
 Artificial/
 clipped_results/
+clipped_results_short/
+AneurysmGeneration/models/
 
 # keep simvascular projects local
-smooth_boys*/
-oops/
-baseline/
+sv_projects/
 
 # no need to upload matlab stuff
 html/

@@ -19,8 +19,6 @@ from utils.branch_ops import *
 
 
 def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_connectivity, cur_face, centerline, start, length, rad_max, easing, expansion_mode, suffix):
-
-#def grow_aneurysm(wall_name, centerline, cur_face, face_to_points, point_to_face, face_to_cap, point_connectivity, options):
 	'''
 	input: 
 		* name of wall vtp file
@@ -66,9 +64,12 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 	originals = {faceID:extract_points(wall_model, pointIDs=intersect[faceID]) for faceID in intersect.keys()}
 	
+	# so we're actually going to clamp the end to the min radius so that the control flow condition later 
+	# ensures some smoothness at the outlet 
+	# turns out that this works really well! 
 	expand = interpolated_points(axial_pos, 
 								(min(axial_pos), max(axial_pos)), 
-								rad_shape=[np.mean(start_radii), rad_max, np.mean(end_radii) ] 
+								rad_shape=[np.mean(start_radii), rad_max, np.min(end_radii) ] 
 								)
 
 	# expand = interpolation_2d(start_border, end_border, start_radii, end_radii, wall_ref[wall_region], start, end-start)
@@ -90,12 +91,16 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 		elif expansion_mode == 'absolute':
 
-			if expand[i] < min_dists[pointID]: expand[i] = min_dists[pointID]
+			if expand[i] < min_dists[pointID]: 
+				expand[i] = min_dists[pointID]
 
 	 		wall_unit = [xi/min_dists[pointID] for xi in wall_normal]
 			displace = [r*expand[i] for r in wall_unit]
 			new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
-			new_pt = [r - dr for (r, dr) in zip(new_pt, adjust[i])]
+
+			# originally we try to use this centerline tilting thing but it's not that great — probably works a lot worse if we do it 
+			# after applying the oriignla displacements; if we had used it initially to compute displacements, maybe that would be better. 
+			# new_pt = [r - dr for (r, dr) in zip(new_pt, adjust[i])]
 
 		# after applying the displacement to the wall points, modify displacement magnitude for branch shift
 		displace_adjusted = [d - n for (d, n) in zip (displace, wall_normal)]
