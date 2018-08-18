@@ -57,6 +57,7 @@ def parse_command_line(args):
 	parser = argparse.ArgumentParser(description='lol')
 	parser.add_argument('--source', action="store", type=str, default="AneurysmGeneration/models/SKD0050/SKD0050_baseline_model_modified_p1.vtp")
 	parser.add_argument('--results', action="store", type=str, default="Artificial/RCA/p1/all_results.vtp")
+	parser.add_argument('--outdir', action="store", type=str, default='clipped_results_short/')
 	parser.add_argument('--pkl', dest='pkl', action='store_true')
 	parser.add_argument('--vtk', dest='vtk', action='store_true')
 	parser.add_argument('--mapping', dest='mapping', action='store_true')
@@ -64,6 +65,7 @@ def parse_command_line(args):
 	parser.add_argument('--post', dest='post', action='store_true')
 	parser.add_argument('--clip', dest='clip', action='store_true')
 
+	parser.add_argument('--targ_fname', action="store", type=str, default='/AneurysmGeneration/targets.txt')
 	parser.add_argument('--suff', action="store", type=str, default='p1')
 	
 	args = vars(parser.parse_args())
@@ -101,99 +103,6 @@ def apply_bounding_box(centerline, points, offsets=np.array([.11, .15, .8])):
 	return patch_index
 
 
-def clip_aneurysm(poly_results, start_id, end_id,  wall_region, suff):
-	'''
-		input:
-			* poly_results, the polydata object from reading in all_results.vtp
-			* start_id, the set of id's of points within the upstream opening of aneurysm 
-			* end_id, the set of id's of points within the downstream contraction of aneurysm
-			* wall_region, the list of id's of points included within the aneurysm
-			* suff, the name of the model we're processing
-
-		output: 
-			* 
-
-		Defines 
-
-	'''
-
-	# get start and end point regions -- these are just start_id and end_id 
-	points_start = extract_points(poly_results, start_id)
-	points_end = extract_points(poly_results, end_id)
-
-	# a single clip plane is defined by an origin and a normal
-	# the origin can be computed as the average position of a ring of points 
-
-	origin_start = np.mean(points_start, axis=0)
-	origin_end = np.mean(points_end, axis=0)
-
-	print origin_start
-
-	# span, that we can use to ensure that the normals face in the right direction
-	span = origin_end - origin_start
-	span /= np.linalg.norm(span)
-
-	# radial_start = points_start - origin_start
-	# radial_end = points_end - origin_end
-
-	# normal_start = np.cross(radial_start[0], radial_start[1])
-	# normal_end = np.cross(radial_end[0], radial_end[2])
-
-	# normal_start /= np.linalg.norm(normal_start)*np.sign(np.dot(normal_start, span))
-	# normal_end /= np.linalg.norm(normal_end)*np.sign(np.dot(normal_end, span))
-
-	# print normal_start
-	# now, we have enough to build the clipper planes
-
-	alpha = .02
-	# shift the origin by a bit 
-	origin_start -= span*alpha
-	origin_end += span*alpha
-
-	# define planes
-	plane_start = vtk.vtkPlane()
-	plane_start.SetOrigin(origin_start)
-	plane_start.SetNormal(-1*span)
-
-	plane_end = vtk.vtkPlane()
-	plane_end.SetOrigin(origin_end)
-	plane_end.SetNormal(span)
-
-	# now let's pipe the two geometry extractors
-	extract_start = vtk.vtkExtractPolyDataGeometry()
-	extract_start.SetInputData(poly_results)
-	extract_start.SetImplicitFunction(plane_start)
-	extract_start.PassPointsOn()
-	extract_start.Update()
-
-	extract_end = vtk.vtkExtractPolyDataGeometry()
-	extract_end.SetInputConnection(extract_start.GetOutputPort())
-	extract_end.SetImplicitFunction(plane_end)
-	extract_end.SetExtractBoundaryCells(True)
-	extract_end.PassPointsOn()
-	extract_end.Update()
-
-	# we may have to; 
-	# we can take origin = origin + (-ds)*n for a small ds in order to make sure that all the points from the origin
-	# that we wanted to icnlud eare included 
-
-	# next, we want to use a connectivity filter with SetExtractionModeToPointSeededRegions()
-	connect = vtk.vtkPolyDataConnectivityFilter()
-	connect.SetInputData(extract_end.GetOutput())
-	connect.SetExtractionModeToPointSeededRegions()
-	connect.AddSeed(wall_region[50]) # use an arbitrary point id from within the wall region to seed the connectivity filter
-	connect.Update()
-
-	region = connect.GetOutput()
-
-	# now we write it out and pray that it worked
-	clipped_writer = vtk.vtkXMLPolyDataWriter()
-	clipped_writer.SetInputData(region)
-	clipped_writer.SetFileName('clipped_results/RCA/'+ suff +'.vtp')
-	clipped_writer.Write()
-
-
-
 def main():
 
 	args = parse_command_line(sys.argv)
@@ -204,6 +113,22 @@ def main():
 
 	points_source = None
 	points_results = None
+	centerline = None
+	faceID = 0
+
+	# get start and length from targets 
+	targets = read_targets(fname=args['targ_fname'], as_dict=True)
+	cl_choice, start, length, _ = targets[args['suff']]
+
+	print cl_choice
+	# load in the centerline
+
+	if cl_choice == 2: 
+		centerline = read_from_file('RCA_cl')
+		faceID = 8
+	else: 
+		centerline = read_from_file('centerlines')[cl_choice]
+		faceID = 2
 
 	if args['vtk']: 
 		source_model_path = args['source']
@@ -232,9 +157,6 @@ def main():
 
 
 	if args['mapping']:
-
-		# load in the centerline
-		centerline = read_from_file('RCA_cl')
 		
 		# use the centerline to apply a bounding box to the points that we need to look at 
 		bounded_source_idx = apply_bounding_box(centerline, points_source)[0]
@@ -264,7 +186,7 @@ def main():
 		mapped = np.zeros(mapping.shape[0])
 
 		for c, cand in enumerate(mapping):
-			if cand in face_to_points[8]:
+			if cand in face_to_points[faceID]:
 				mapped[c] = 1
 				vessel_ids.append(c)
 
@@ -278,18 +200,18 @@ def main():
 		mapping = read_from_file('mapping_'+args['suff'])
 
 		print len(np.unique(mapping))
-		print np.unique(np.isin(mapping, list(face_to_points[8])), return_counts=True)
+		print np.unique(np.isin(mapping, list(face_to_points[faceID])), return_counts=True)
 		print np.where(
 			np.isin(
 				mapping, 
-				face_to_points[8]
+				face_to_points[faceID]
 				)
 			)
 		mapped = np.zeros(mapping.shape[0])
 		for c, cand in enumerate(mapping):
-			if cand in face_to_points[8]:
+			if cand in face_to_points[faceID]:
 				mapped[c] = 1
-		# mapping[np.isin(mapping, face_to_points[8])] = 2
+		# mapping[np.isin(mapping, face_to_points[faceID])] = 2
 		mapping_vtk = nps.numpy_to_vtk(mapped)
 		mapping_vtk.SetName('Mapped')
 
@@ -309,16 +231,9 @@ def main():
 		poly_results, reader = return_polydata(all_results_path, return_reader=True)
 
 		vessel_ids, vessel_points = read_from_file('mapped_'+args['suff'])
-		# load in the centerline
-		centerline = read_from_file('RCA_cl')
-
+		
 		# use normalization utils to map mesh points onto the centerline
 		wall_ref, _, wall_to_center, min_dists, centerline_length = projection(NoP, centerline, points_results, vessel_ids)
-
-		# get start and length from targets 
-		targets = read_targets(as_dict=True)
-
-		_, start, length, _ = targets[args['suff']]
 
 		end=start+length/centerline_length
 
@@ -381,8 +296,8 @@ def main():
 			connect = vtk.vtkPolyDataConnectivityFilter()
 			connect.SetInputData(extract_end.GetOutput())
 			connect.SetExtractionModeToPointSeededRegions()
-			connect.AddSeed(wall_region[100])
-			# connect.AddSeed(wall_region[len(wall_region)/2]) # use an arbitrary point id from within the wall region to seed the connectivity filter
+			#connect.AddSeed(wall_region[100])
+			connect.AddSeed(wall_region[len(wall_region)/2]) # use an arbitrary point id from within the wall region to seed the connectivity filter
 			connect.Update()
 
 			region = connect.GetOutput()
@@ -392,7 +307,7 @@ def main():
 			# now we write it out and pray that it worked
 			clipped_writer = vtk.vtkXMLPolyDataWriter()
 			clipped_writer.SetInputData(region)
-			clipped_writer.SetFileName('clipped_results_short/RCA/'+ args['suff'] +'.vtp')
+			clipped_writer.SetFileName(args['outdir'] + args['suff'] +'.vtp')
 			clipped_writer.Write()
 
 			

@@ -51,7 +51,8 @@ def shift_branches(wall_model, wall_region, intersection, originals, affected_fa
 		average_displace = np.mean(displace_list, axis=0)
 		# scale the mean displacement to preserve magnitude 
 		average_displace /= np.linalg.norm(average_displace)
-		average_displace *= np.linalg.norm(np.max(displace_list, axis=0))
+		average_displace *= np.mean(np.linalg.norm(displace_list, axis=1))
+#		average_displace *= np.linalg.norm(np.max(displace_list, axis=0))
 		
 		affected_face_displace[faceID] = average_displace
 		
@@ -68,10 +69,10 @@ def shift_branches(wall_model, wall_region, intersection, originals, affected_fa
 			new_pt = [r + boost*dr for (r, dr) in zip(cur_pt, displace)]
 			wall_model.GetPoints().SetPoint(pointID, new_pt)
 
-		wall_model = branch_tilt(wall_model, intersection[faceID], originals[faceID], list(branch_ids))
+		# wall_model = branch_tilt(wall_model, intersection[faceID], originals[faceID], list(branch_ids))
 
 		if easing:
-			branch_easing(wall_model, intersection, vessel_points, point_connectivity)	
+			branch_easing(wall_model, intersection[faceID], vessel_points, point_connectivity)	
 
 
 
@@ -160,7 +161,7 @@ def branch_tilt(wall_model, inletIDs, original_positions, branch_ids):
 	return wall_model
 
 
-def branch_easing(wall_model, intersection, vessel_points, point_connectivity, num_iterations=4, aggress=.5):
+def branch_easing(wall_model, intersection, vessel_points, point_connectivity, num_iterations=4, aggress=.6):
 	'''
 
 		an iterative point-moving solution to awkward branch movements

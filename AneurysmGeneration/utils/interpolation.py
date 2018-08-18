@@ -54,7 +54,7 @@ def interpolated_points(x_interp, centerrange, rad_shape=None, interp_type='cubi
 	else:
 		print 'rad_shape has been specified:'
 		start, middle, end = rad_shape
-		rad_shape = [start, .5*(start + middle), middle, .5*(middle + end), end]
+		rad_shape = [start, .7*(start + middle), middle, .7*(middle + end), end]
 
 	# if it's not none, expect it to be a tuple of (start prescribed radius, max prescribed radius, end prescribed radius)
 	# so we should maybe supplement it with some other points

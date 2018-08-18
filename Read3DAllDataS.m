@@ -4,8 +4,8 @@ close all;
 
 pConv = 1334;
 
-suffix = 'd4';
-name3D = '~/Documents/lab/KD-project/Artificial/RCA/d4/AllData' ; 
+suffix = 'p2';
+name3D = '~/Documents/lab/KD-project/Artificial/RCA/asi6/p2/AllData' ; 
 
 % Set overall parameters
 
@@ -134,7 +134,7 @@ ax.FontSize = 12;
 % save the produced figures to a set location 
 for f = 1:numel(figures)
     fig = figures(f);
-    filename = sprintf('Artificial/RCA/%s/Figure%02d_%s.png', suffix, f, suffix);
+    filename = sprintf('Artificial/RCA/asi6/%s/Figure%02d_%s.png', suffix, f, suffix);
     print( fig, '-dpng', filename );
 end
 
@@ -145,51 +145,51 @@ Q_rcr3D = 0;
 Q_lcor3D = 0;
 Q_rcor3D = 0;
 
-    % SUM RCR FLUX
-    for i=0:1:nRCR-1
-      temp = trapz(AllData(endStep_3D-singleCycle_3D:endStep_3D,t_ind), ... 
-          AllData(endStep_3D-singleCycle_3D:endStep_3D,rcr_st+i));
-      Q_rcr3D = Q_rcr3D + temp; 
-    end
+% SUM RCR FLUX
+for i=0:1:nRCR-1
+  temp = trapz(AllData(endStep_3D-singleCycle_3D:endStep_3D,t_ind), ... 
+      AllData(endStep_3D-singleCycle_3D:endStep_3D,rcr_st+i));
+  Q_rcr3D = Q_rcr3D + temp; 
+end
 
-    % SUM LEFT CORONARY FLUX
-    for i=0:1:nCOR_l-1
-      temp=trapz(AllData(endStep_3D-singleCycle_3D:endStep_3D,t_ind), ... 
-          AllData(endStep_3D-singleCycle_3D:endStep_3D,lcor_st+i));
-      Q_lcor3D = Q_lcor3D + temp; 
-    end
-    
-    % SUM RIGHT CORONARY FLUX
-    for i=0:1:nCOR_r-1
-      temp=trapz(AllData(endStep_3D-singleCycle_3D:endStep_3D,t_ind), ... 
-          AllData(endStep_3D-singleCycle_3D:endStep_3D,rcor_st+i));
-      Q_rcor3D=Q_rcor3D + temp; 
-    end
-    
-    Total_Q_out = Q_rcor3D + Q_lcor3D + Q_rcr3D;
-    
-    % Only calculate certain 3D results
-    Qinlet3D = trapz(AllData(endStep_3D-singleCycle_3D:endStep_3D,t_ind), ... 
-        AllData(endStep_3D-singleCycle_3D:endStep_3D,nUnknowns + nFaces + 5));
-    SV = trapz(AllData(endStep_3D-singleCycle_3D:endStep_3D,t_ind), ... 
-        AllData(endStep_3D-singleCycle_3D:endStep_3D,9));
-    Aor_Cor_split3D = ((Q_lcor3D+Q_rcor3D)/(Q_lcor3D+Q_rcor3D+Q_rcr3D))*100.0;
-    L_R_corsplit3D = (Q_lcor3D/(Q_lcor3D+Q_rcor3D))*100.0;
-    Pao_max3D = max(AllData(endStep_3D-singleCycle_3D:endStep_3D,10));
-    Pao_min3D = min(AllData(endStep_3D-singleCycle_3D:endStep_3D,10));
-    %Pao_mean3D = mean(AllData(endStep_3D-singleCycle_3D:endStep_3D,10));
-    
-    % print the results to text file
-    filename = 'Artificial/RCA/3D_results.txt';
-    fid = fopen(filename, 'a+');
-    fprintf(fid, '\n --- 3D RESULTS for %s --- \n', suffix);
-    fprintf(fid, 'Qinlet = %8.3f ml/cycle\n',abs(Qinlet3D));
-    fprintf(fid, 'SV = %8.3f ml \n',SV);
-    fprintf(fid, 'Total Q out = %8.3f ml/cycle\n',Total_Q_out);
-    fprintf(fid, 'Ao-Cor-Split = %8.3f %%\n',Aor_Cor_split3D);
-    fprintf(fid, 'L_R_Cor_Split = %8.3f %%\n',L_R_corsplit3D);
-    fprintf(fid, 'Pao_max = %8.3f mmHg\n',Pao_max3D);
-    fprintf(fid, 'Pao_min = %8.3f mmHg\n',Pao_min3D);
-    %fprintf('Pao_mean = %8.3f mmHg\n',Pao_mean3D);
+% SUM LEFT CORONARY FLUX
+for i=0:1:nCOR_l-1
+  temp=trapz(AllData(endStep_3D-singleCycle_3D:endStep_3D,t_ind), ... 
+      AllData(endStep_3D-singleCycle_3D:endStep_3D,lcor_st+i));
+  Q_lcor3D = Q_lcor3D + temp; 
+end
+
+% SUM RIGHT CORONARY FLUX
+for i=0:1:nCOR_r-1
+  temp=trapz(AllData(endStep_3D-singleCycle_3D:endStep_3D,t_ind), ... 
+      AllData(endStep_3D-singleCycle_3D:endStep_3D,rcor_st+i));
+  Q_rcor3D=Q_rcor3D + temp; 
+end
+
+Total_Q_out = Q_rcor3D + Q_lcor3D + Q_rcr3D;
+
+% Only calculate certain 3D results
+Qinlet3D = trapz(AllData(endStep_3D-singleCycle_3D:endStep_3D,t_ind), ... 
+    AllData(endStep_3D-singleCycle_3D:endStep_3D,nUnknowns + nFaces + 5));
+SV = trapz(AllData(endStep_3D-singleCycle_3D:endStep_3D,t_ind), ... 
+    AllData(endStep_3D-singleCycle_3D:endStep_3D,9));
+Aor_Cor_split3D = ((Q_lcor3D+Q_rcor3D)/(Q_lcor3D+Q_rcor3D+Q_rcr3D))*100.0;
+L_R_corsplit3D = (Q_lcor3D/(Q_lcor3D+Q_rcor3D))*100.0;
+Pao_max3D = max(AllData(endStep_3D-singleCycle_3D:endStep_3D,10));
+Pao_min3D = min(AllData(endStep_3D-singleCycle_3D:endStep_3D,10));
+%Pao_mean3D = mean(AllData(endStep_3D-singleCycle_3D:endStep_3D,10));
+
+% print the results to text file
+filename = 'Artificial/RCA/asi6/3D_results.txt';
+fid = fopen(filename, 'a+');
+fprintf(fid, '\n --- 3D RESULTS for %s --- \n', suffix);
+fprintf(fid, 'Qinlet = %8.3f ml/cycle\n',abs(Qinlet3D));
+fprintf(fid, 'SV = %8.3f ml \n',SV);
+fprintf(fid, 'Total Q out = %8.3f ml/cycle\n',Total_Q_out);
+fprintf(fid, 'Ao-Cor-Split = %8.3f %%\n',Aor_Cor_split3D);
+fprintf(fid, 'L_R_Cor_Split = %8.3f %%\n',L_R_corsplit3D);
+fprintf(fid, 'Pao_max = %8.3f mmHg\n',Pao_max3D);
+fprintf(fid, 'Pao_min = %8.3f mmHg\n',Pao_min3D);
+%fprintf('Pao_mean = %8.3f mmHg\n',Pao_mean3D);
 
 

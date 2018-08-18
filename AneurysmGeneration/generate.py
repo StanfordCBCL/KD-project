@@ -46,7 +46,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	included_points = face_to_points[cur_face]
 	NoP_wall, wall_points = extract_points(wall_model)
 
-	# centerline=read_from_file('RCA_cl')
+	centerline=read_from_file('RCA_cl')
 
 	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(NoP_wall, centerline, wall_points, np.array(list(included_points)))
 
@@ -57,8 +57,8 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 	start_border, end_border = wall_ref[start_id], wall_ref[end_id]
 	start_radii, end_radii = min_dists[start_id], min_dists[end_id]
-	adjust = centerline_shift(start_id, end_id, axial_pos, wall_model, wall_to_center[start_id[0]], wall_to_center[end_id[-1]])
-	print adjust
+	# adjust = centerline_shift(start_id, end_id, axial_pos, wall_model, wall_to_center[start_id[0]], wall_to_center[end_id[-1]])
+	# print adjust
 
 	affected_face_displace, intersect = organize_intersections(wall_region, point_to_face, cur_face)
 
@@ -98,7 +98,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 			displace = [r*expand[i] for r in wall_unit]
 			new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
 
-			# originally we try to use this centerline tilting thing but it's not that great — probably works a lot worse if we do it 
+			# originally we try to use this centerline tilting thing but it's not that great, probably works a lot worse if we do it 
 			# after applying the oriignla displacements; if we had used it initially to compute displacements, maybe that would be better. 
 			# new_pt = [r - dr for (r, dr) in zip(new_pt, adjust[i])]
 
@@ -175,6 +175,7 @@ def main():
 	centers, names = gather_centerlines(model_dir)
 	resampled = [resample_centerline(centers[name]) for name in names]
 
+	
 	# some random code for plotting the centerlines 
 	if PLOT_CL: visualize_centerlines(names, centers, resampled)
 

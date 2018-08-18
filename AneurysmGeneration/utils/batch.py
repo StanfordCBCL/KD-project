@@ -45,7 +45,7 @@ def read_from_file(name):
 	return new_obj
 
 
-def read_targets(fname='/AneurysmGeneration/left_targets.txt', as_dict=False):
+def read_targets(fname='/AneurysmGeneration/targets.txt', as_dict=False):
 	'''
 	reads a file called targets.txt that contains: 
 	[vessel id] [start pos] [length] [rad_max] [suffix] 
@@ -60,7 +60,8 @@ def read_targets(fname='/AneurysmGeneration/left_targets.txt', as_dict=False):
 	with open(fname) as f:
 		all_lines = [line.split() for line in f.readlines()]
 		for line in all_lines:
-			print line
+			if '#' in line[0]:
+				continue
 			vessel = int(line[0])
 			suffix = line[-1]
 			start, length, rad_max = [float(val) for val in line[1:4]]
