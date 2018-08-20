@@ -3,6 +3,7 @@
 '''
 
 import numpy as np
+import sys
 import vtk
 from parser import *
 from pathreader import read_centerline

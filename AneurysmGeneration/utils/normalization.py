@@ -5,7 +5,7 @@
 
 	Normalization and projections adapted from Justin's scripts. 
 '''
-
+import sys
 import numpy as np
 import vtk 
 
@@ -146,8 +146,8 @@ def compute_theta(r, n, t):
 	'''
 	
 
-	print 'computing theta'
-	print '----------------'
+	# print 'computing theta'
+	# print '----------------'
 
 	# precompute some stuff
 	mag_r = np.linalg.norm(r, axis=1)
@@ -211,7 +211,8 @@ def projection(NoP, centerline, wall_points, included_ids):
 	n_chunks = len(included_ids)//chunk_sz
 
 	for c in range(n_chunks):
-		print '> chunk ', c
+		print '> chunk ', c, '/', n_chunks -1, '		\r',
+		sys.stdout.flush()
 		id_chunk = included_ids[c*chunk_sz:(c+1)*chunk_sz]
 		if c == n_chunks - 1: id_chunk = included_ids[c*chunk_sz:]
 
@@ -227,6 +228,7 @@ def projection(NoP, centerline, wall_points, included_ids):
 		for pointID, center_idx in zip(id_chunk, center_indices): 
 			wall_to_center[pointID] = centerline[center_idx]
 
+	print ""
 
 	return (transformed_wall_ref, normalized_center, wall_to_center, min_dists, centerline_length)
 

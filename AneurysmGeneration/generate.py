@@ -46,7 +46,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	included_points = face_to_points[cur_face]
 	NoP_wall, wall_points = extract_points(wall_model)
 
-	centerline=read_from_file('RCA_cl')
+	# centerline=read_from_file('RCA_cl')
 
 	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(NoP_wall, centerline, wall_points, np.array(list(included_points)))
 
@@ -107,7 +107,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 		for face, points in intersect.iteritems():
 			if pointID in points:
-				print '> recording disp for prop to this face:', face
+# 				print '> recording disp for prop to this face:', face
 				affected_face_displace[face].append(np.array(displace_adjusted))
 
 
@@ -173,8 +173,8 @@ def main():
 	# find the names of the centerline files (without the .pth file ending)
 	# note: this matches centerline name to the np array with all the point data
 	centers, names = gather_centerlines(model_dir)
-	resampled = [resample_centerline(centers[name]) for name in names]
-
+	# resampled = [resample_centerline(centers[name]) for name in names]
+	resampled = read_from_file('centerlines')
 	
 	# some random code for plotting the centerlines 
 	if PLOT_CL: visualize_centerlines(names, centers, resampled)

@@ -23,6 +23,7 @@ Artificial/
 clipped_results/
 clipped_results_short/
 AneurysmGeneration/models/
+paraview_states/
 
 # keep simvascular projects local
 sv_projects/
