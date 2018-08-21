@@ -4,7 +4,7 @@
 
 
 '''
-
+import sys
 import numpy as np
 import vtk
 from vtk.util import numpy_support as nps 
@@ -58,6 +58,8 @@ def shift_branches(wall_model, wall_region, intersection, originals, affected_fa
 		
 		#affected_face_displace[faceID] = np.mean(displace_list, axis=0)
 
+	print ''
+
 	# apply displacement to affected branches and associated caps
 	for faceID, displace in affected_face_displace.iteritems():
 		cap_points = face_to_cap[faceID]
@@ -69,7 +71,8 @@ def shift_branches(wall_model, wall_region, intersection, originals, affected_fa
 			new_pt = [r + boost*dr for (r, dr) in zip(cur_pt, displace)]
 			wall_model.GetPoints().SetPoint(pointID, new_pt)
 
-		# wall_model = branch_tilt(wall_model, intersection[faceID], originals[faceID], list(branch_ids))
+		if faceID == 5:
+			wall_model = branch_tilt(wall_model, intersection[faceID], originals[faceID], list(branch_ids))
 
 		if easing:
 			branch_easing(wall_model, intersection[faceID], vessel_points, point_connectivity)	
@@ -110,8 +113,17 @@ def branch_tilt(wall_model, inletIDs, original_positions, branch_ids):
 	u_post,_,_ = np.linalg.svd(posts_zero_center.T)
 	normal_post = u_post[-1]
 
+	print 'normal_original is', normal_original
+	print 'normal_post is', normal_post
+	
 	# determine how much to tilt 
 	crossed = np.cross(normal_original, normal_post)
+
+	if not np.any(crossed) :
+		print 'cross product is 0! tilting discontinued'
+		print '-----------------------------------------'
+		return wall_model
+
 	G = np.array([
 				[np.dot(normal_original, normal_post), -1*np.linalg.norm(crossed), 0],
 				[np.linalg.norm(crossed), np.dot(normal_original, normal_post), 0 ], 
@@ -126,6 +138,8 @@ def branch_tilt(wall_model, inletIDs, original_positions, branch_ids):
 	Finv[:,1] = vec_rejec
 	Finv[:,2] = -1*crossed
 
+	print Finv
+	print G
 	tilt = np.matmul(Finv,G) 
 	tilt = np.matmul(tilt, np.linalg.inv(Finv) )
 
@@ -154,7 +168,6 @@ def branch_tilt(wall_model, inletIDs, original_positions, branch_ids):
 	for pointID, point in zip(branch_ids, new_branch):
 		wall_model.GetPoints().SetPoint(pointID, point)
 
-
 	print 'done tilting branches'
 	print '---------------------'
 
@@ -173,7 +186,7 @@ def branch_easing(wall_model, intersection, vessel_points, point_connectivity, n
 	# iteratively apply a laplacian-like smoothing operation to affected points at the intersection
 	for i in range(num_iterations):
 
-		print '>>>> Easing iteration # ', i
+		print '>>>> Easing iteration # ', i, '/', num_iterations - 1
 
 		easing = {}
 
@@ -203,6 +216,7 @@ def branch_easing(wall_model, intersection, vessel_points, point_connectivity, n
 		intersection = easing.keys()
 
 
+	print ''
 	print 'Completed branch easing'
 	print '-----------------------'
 
