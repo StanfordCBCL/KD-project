@@ -22,7 +22,7 @@ def area_under_threshold(reader, tawss_upper=10.0, ):
 		output:	
 
 	'''
-	
+
 	threshold_bounds = np.arange(.05, tawss_upper, .5)
 	area_fractions = np.zeros(threshold_bounds.shape)
 
@@ -55,30 +55,74 @@ def area_under_threshold(reader, tawss_upper=10.0, ):
 
 	return area_fractions
 
+def extract_wss_cycle(reader, step_lower=3000, step_upper = 4000, tstep = 50):
+	'''
+
+		compute the average wall shear stress at every point in the cardiac cycle 
+		compute the average TAWSS 
+	'''
+
+	steps = np.arange(step_lower, step_upper + tstep, tstep)
+	wss_cycle_vec = np.zeros((len(steps), 3))
+
+	for i, step in enumerate(steps):
+		integrateVariables = IntegrateVariables(Input=reader)
+		result = paraview.servermanager.Fetch(integrateVariables)
+
+		wss_cycle_vec[i] = result.GetPointData().GetArray('vWSS_0' + str(step)).GetTuple(0)
+
+	total_area = result.GetCellData().GetArray('Area').GetTuple(0)[0]
+
+	wss_cycle = np.linalg.norm(wss_cycle_vec, axis=1)/total_area
+	avg_vtawss = np.linalg.norm(result.GetPointData().GetArray('vTAWSS').GetTuple(0))/total_area
+
+	return (wss_cycle, avg_vtawss)
+
+
+
 def main():
 
+	computed_vars = {
+	'WSS_THRESHOLD_AREA': {}, 
+	'WSS_CYCLE': {},
+	}
+
+	corresponding_methods = {
+	'WSS_THRESHOLD_AREA': area_under_threshold,
+	'WSS_CYCLE': extract_wss_cycle
+	}
+
 	base_path = '/Users/alex/Documents/lab/KD-project/clipped_results_short/'
-	vessel = 'RCA/'
+	# vessel = 'RCA/'
+	vessel = 'LAD/'
 	shapes = ['ASI2', 'ASI6']
+	pos_sizes = None
+	left_sizes = ['lad1', 'lad2', 'lad3', 'lad4', 'lad5']
 	proximal = ['p1', 'p2', 'p3', 'p4', 'p5']
 	medial = ['m1', 'm2', 'm3', 'm4', 'm5']
 	distal = ['d1', 'd2', 'd3', 'd4', 'd5']
 
-	all_area_fractions = {}
-
 	for shape in shapes: 
-		pos_sizes = proximal + medial + distal
-		if shape == 'ASI6': pos_sizes = proximal
+		if 'RCA'in vessel: 
+			pos_sizes = proximal + medial + distal
+			if shape == 'ASI6': 
+				pos_sizes = proximal
+		if 'LAD' in vessel: 
+			pos_sizes = left_sizes
+
 		for pos_size in pos_sizes: 
 			full_path = base_path + vessel + shape + '/' + pos_size + '.vtp'
-			print 'full_path is:', full_path
+			print 'working on:', full_path
 
 			reader = XMLPolyDataReader(FileName=[full_path])
-			all_area_fractions[shape+'_'+pos_size] = area_under_threshold(reader)
+
+			for var, val in computed_vars.iteritems():
+				if val is not None:
+					computed_vars[var][shape+'_'+pos_size] = corresponding_methods[var](reader)
 
 
-
-	write_to_file('area_fractions', all_area_fractions)
+	for var, val in computed_vars.iteritems():
+		if val is not None: write_to_file(var+'_' + vessel[:-1], val)
 
 if __name__ == "__main__":
 

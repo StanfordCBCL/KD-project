@@ -4,8 +4,8 @@ close all;
 
 pConv = 1334;
 
-suffix = 'p2';
-name3D = '~/Documents/lab/KD-project/Artificial/RCA/asi6/p2/AllData' ; 
+suffix = 'lad1';
+name3D = '~/Documents/lab/KD-project/Artificial/LAD/ASI6/lad1_attempts/AllData_try2' ; 
 
 % Set overall parameters
 
@@ -16,8 +16,9 @@ nCOR_r = 4;
 nCycle = 4;
 
 
-StartPlot = 2000;
-EndPlot = 4000 ;
+StartPlot = 1000;
+EndPlot = 2300 ;
+
 
 endStep_3D = EndPlot ; %size(AllData, 1);
 singleCycle_3D = 1000 ; %endStep_3D/nCycle;
@@ -132,11 +133,11 @@ ax=gca;
 ax.FontSize = 12;
 
 % save the produced figures to a set location 
-for f = 1:numel(figures)
-    fig = figures(f);
-    filename = sprintf('Artificial/RCA/asi6/%s/Figure%02d_%s.png', suffix, f, suffix);
-    print( fig, '-dpng', filename );
-end
+% for f = 1:numel(figures)
+%     fig = figures(f);
+%     filename = sprintf('Artificial/RCA/asi6/%s/Figure%02d_%s.png', suffix, f, suffix);
+%     print( fig, '-dpng', filename );
+% end
 
 
 %Calculate Resuts for the last cycle
@@ -180,7 +181,7 @@ Pao_min3D = min(AllData(endStep_3D-singleCycle_3D:endStep_3D,10));
 %Pao_mean3D = mean(AllData(endStep_3D-singleCycle_3D:endStep_3D,10));
 
 % print the results to text file
-filename = 'Artificial/RCA/asi6/3D_results.txt';
+filename = 'Artificial/LAD/ASI6/3D_results.txt';
 fid = fopen(filename, 'a+');
 fprintf(fid, '\n --- 3D RESULTS for %s --- \n', suffix);
 fprintf(fid, 'Qinlet = %8.3f ml/cycle\n',abs(Qinlet3D));

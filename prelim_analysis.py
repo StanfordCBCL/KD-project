@@ -172,7 +172,9 @@ def main():
 
 		for i in range(n_splits):
 
-			print '> split', i
+			print '> split', i, '/', n_splits - 1, '		\r',
+			sys.stdout.flush()
+
 			cur_idx = bounded_results_idx[block_sz*i:block_sz*(i+1)]
 
 			if i == n_splits - 1:
