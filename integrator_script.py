@@ -78,23 +78,63 @@ def extract_wss_cycle(reader, step_lower=3000, step_upper = 4000, tstep = 50):
 
 	return (wss_cycle, avg_vtawss)
 
+def osi_above_threshold(reader, osi_upper=.5):
+	'''
+		input:
 
+		output:	
+
+	'''
+
+	threshold_bounds = np.linspace(0, osi_upper, num=75)
+	area_fractions = np.zeros(threshold_bounds.shape)
+
+	for i, cur_lower in enumerate(threshold_bounds):
+		# create a new 'Threshold'
+		threshold = Threshold(Input=reader)
+
+		# Properties modified on threshold1
+		threshold.Scalars = ['POINTS', 'vOSI']
+		threshold.ThresholdRange = [cur_lower, 10.0]
+
+		# create a new 'Integrate Variables'
+		integrateVariables = IntegrateVariables(Input=threshold)
+		result = paraview.servermanager.Fetch(integrateVariables)
+
+		try:
+			area_fractions[i] = result.GetCellData().GetArray('Area').GetTuple(0)[0] #unwrap this shit 
+		except:
+			area_fractions[i] = 0
+
+	
+
+	# compute the total area
+	integrateVariables = IntegrateVariables(Input=reader)
+	result = paraview.servermanager.Fetch(integrateVariables)
+	total_area = result.GetCellData().GetArray('Area').GetTuple(0)[0]
+
+	area_fractions /= total_area
+	print area_fractions
+
+	return area_fractions
 
 def main():
 
 	computed_vars = {
-	'WSS_THRESHOLD_AREA': {}, 
-	'WSS_CYCLE': {},
+	# 'WSS_THRESHOLD_AREA': {}, 
+	# 'WSS_CYCLE': {},
+	'OSI_THRESHOLD_AREA':{}
 	}
 
 	corresponding_methods = {
 	'WSS_THRESHOLD_AREA': area_under_threshold,
-	'WSS_CYCLE': extract_wss_cycle
+	'WSS_CYCLE': extract_wss_cycle,
+	'OSI_THRESHOLD_AREA': osi_above_threshold
 	}
 
 	base_path = '/Users/alex/Documents/lab/KD-project/clipped_results_short/'
-	# vessel = 'RCA/'
-	vessel = 'LAD/'
+	vessel = 'RCA/'
+	# vessel = 'LAD/'
 	shapes = ['ASI2', 'ASI6']
 	pos_sizes = None
 	left_sizes = ['lad1', 'lad2', 'lad3', 'lad4', 'lad5']
