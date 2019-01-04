@@ -2,6 +2,7 @@
 
 	branch_ops.py
 
+	A file which contains functions associated with movement of branches coinciding with generated aneurysm regions. 
 
 '''
 import sys
@@ -29,6 +30,8 @@ def shift_branches(wall_model, wall_region, intersection, originals, affected_fa
 			* point_connectivity, 		dict {pointID: [pointIDs that this point is in cell w/ ]}
 			* easing, 					boolean, describes whether branch easing algorithm should be applied
 			* boost, 					float, corresponding to scalar in front of branch shifting amount
+
+		using the displacements stored in affected_face_displace, we can compute the average displacement 
 
 	'''
 

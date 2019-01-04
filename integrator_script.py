@@ -78,6 +78,7 @@ def extract_wss_cycle(reader, step_lower=3000, step_upper = 4000, tstep = 50):
 
 	return (wss_cycle, avg_vtawss)
 
+
 def osi_above_threshold(reader, osi_upper=.5):
 	'''
 		input:
@@ -106,8 +107,6 @@ def osi_above_threshold(reader, osi_upper=.5):
 		except:
 			area_fractions[i] = 0
 
-	
-
 	# compute the total area
 	integrateVariables = IntegrateVariables(Input=reader)
 	result = paraview.servermanager.Fetch(integrateVariables)
@@ -118,11 +117,12 @@ def osi_above_threshold(reader, osi_upper=.5):
 
 	return area_fractions
 
+
 def main():
 
 	computed_vars = {
-	# 'WSS_THRESHOLD_AREA': {}, 
-	# 'WSS_CYCLE': {},
+	'WSS_THRESHOLD_AREA': {}, 
+	'WSS_CYCLE': {},
 	'OSI_THRESHOLD_AREA':{}
 	}
 
@@ -133,9 +133,10 @@ def main():
 	}
 
 	base_path = '/Users/alex/Documents/lab/KD-project/clipped_results_short/'
-	vessel = 'RCA/'
-	# vessel = 'LAD/'
-	shapes = ['ASI2', 'ASI6']
+#	vessel = 'RCA/'
+	vessel = 'LAD/'
+#	shapes = ['ASI2', 'ASI6']
+	shapes = ['ASI2', 'ASI4', 'ASI6']
 	pos_sizes = None
 	left_sizes = ['lad1', 'lad2', 'lad3', 'lad4', 'lad5']
 	proximal = ['p1', 'p2', 'p3', 'p4', 'p5']
@@ -145,8 +146,9 @@ def main():
 	for shape in shapes: 
 		if 'RCA'in vessel: 
 			pos_sizes = proximal + medial + distal
-			if shape == 'ASI6': 
+			if shape == 'ASI6' or shape == 'ASI4': 
 				pos_sizes = proximal
+				
 		if 'LAD' in vessel: 
 			pos_sizes = left_sizes
 

@@ -46,7 +46,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	included_points = face_to_points[cur_face]
 	NoP_wall, wall_points = extract_points(wall_model)
 
-	centerline=read_from_file('RCA_cl')
+	#centerline=read_from_file('RCA_cl')
 
 	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(NoP_wall, centerline, wall_points, np.array(list(included_points)))
 
