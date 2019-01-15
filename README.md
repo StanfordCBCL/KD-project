@@ -68,17 +68,19 @@ In the RCA:
 In the LAD: 
 ![average TAWSS vs shape index, stratified by z-score, lad](post_process_plots/average_wss_shape_index_lad.png)
 
-Under current AHA guidelines using z-score to stratify patient risk, we should be able to identify a value of average TAWSS `k` to separate high from low z-score cases. However, these plots suggest that a perfect separation cannot be achieved, suggesting that aneurysm hemodynamics cannot be predicted through size measurements alone. 
+Under current AHA guidelines using z-score to stratify patient risk, we should be able to identify a value of average TAWSS `k` to separate high from low z-score cases. However, these plots indicate that a perfect separation cannot be achieved, suggesting that aneurysm hemodynamics cannot be predicted through size measurements alone. 
 
 #### TAWSS area distribution with respect to aneurysm shape
 Here, for each aneurysm, we can see the area fraction remaining after thresholding against a certain value of TAWSS, again stratified by aneurysm z-score. Again, horizontal decision boundary perfectly separating high from low z-scores cannot be achieved, again underscoring the need for better measures in predicting aneurysm hemodynamics. 
 
 In the RCA: 
+
 ![TAWSS-exposed area fraction vs shape index, stratified by z-score](post_process_plots/threshold_1_shape_index_rca.png)
 
 ![TAWSS-exposed area fraction vs shape index, stratified by z-score 2](post_process_plots/threshold_3_shape_index_rca.png)
 
 In the LAD: 
+
 ![TAWSS-exposed area fraction vs shape index, stratified by z-score 3](post_process_plots/threshold_1_shape_index_lad.png)
 
 ![TAWSS-exposed area fraction vs shape index, stratified by z-score 3](post_process_plots/threshold_3_shape_index_lad.png)
