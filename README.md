@@ -63,9 +63,11 @@ It is difficult to represent nuanced changes in three-dimensional flow patterns 
 Here, we can see the average TAWSS as computed by numerical integration over the surface followed by division by aneurysmal surface area, stratified by aneurysm z-score. 
 
 In the RCA: 
+
 ![average TAWSS vs shape index, stratified by z-score](post_process_plots/average_wss_shape_index_rca.png)
 
 In the LAD: 
+
 ![average TAWSS vs shape index, stratified by z-score, lad](post_process_plots/average_wss_shape_index_lad.png)
 
 Under current AHA guidelines using z-score to stratify patient risk, we should be able to identify a value of average TAWSS `k` to separate high from low z-score cases. However, these plots indicate that a perfect separation cannot be achieved, suggesting that aneurysm hemodynamics cannot be predicted through size measurements alone. 
