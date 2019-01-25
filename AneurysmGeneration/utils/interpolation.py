@@ -134,7 +134,8 @@ def interpolation_2d(start_coords, end_coords, start_values, end_values, new_poi
 	plt.show()
 	return interpolated
 
-def resample_centerline(centerline, length=None):
+
+def resample_centerline(centerline, length=None, with_derivative=False):
 
 	print 'trying to resample centerline'
 	print centerline.shape
@@ -149,7 +150,6 @@ def resample_centerline(centerline, length=None):
 	# find the knot points
 	tckp,u = interpolate.splprep(centerline, s=s,k=k)
 
-
 	print centerline.shape
 
 	if length is None:
@@ -163,25 +163,41 @@ def resample_centerline(centerline, length=None):
 
 	print 'done resampling centerline'
 	print '--------------------------'
-	#print np.stack((xs, ys, zs)).shape
+
+	if with_derivative:
+		print 'including local derivatives'
+		print '---------------------------'
+		xp, yp, zp = intplt.splev(np.linspace(0,1,nSpoints), tck, der=1)
+		xpp, ypp, zpp = intplt.splev(np.linspace(0,1,nSpoints), tck, der=2)
+		return (np.transpose(np.stack((xs, ys, zs))), np.transpose(np.stack((xp, yp, zp))), np.transpose(np.stack((xpp, ypp, zpp))))
+
 	return np.transpose(np.stack((xs, ys, zs)))
 
 
 if __name__ == "__main__":
 
-	print 'testing 2d interpolation'
 
-	start_border = read_from_file('start_border')
-	end_border = read_from_file('end_border')
+	c_path = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/wall_lca1.pth"
 
-	start_radii = read_from_file('start_radii')
-	end_radii = read_from_file('end_radii')
+	centerline = np.transpose(read_centerline(c_path))
 
-	new_points = read_from_file('new_points')
-	start, end = read_from_file('start_end')
+	print centerline
+	lol = resample_centerline(centerline)
 
 
-	interpolation_2d(start_border, end_border, start_radii, end_radii, new_points, start, end-start)
+	# print 'testing 2d interpolation'
+
+	# # start_border = read_from_file('start_border')
+	# # end_border = read_from_file('end_border')
+
+	# # start_radii = read_from_file('start_radii')
+	# # end_radii = read_from_file('end_radii')
+
+	# # new_points = read_from_file('new_points')
+	# # start, end = read_from_file('start_end')
+
+
+	# # interpolation_2d(start_border, end_border, start_radii, end_radii, new_points, start, end-start)
 
 	# print 'testing interpolation'
 	# print '---------------------'

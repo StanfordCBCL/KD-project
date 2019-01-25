@@ -4,56 +4,57 @@
 	requires you to call this script by alias'ing pvpython in bashrc/bash_profile in order 
 	to import paraview.simple module; :/ 
 
-
 '''
 
-#### import the simple module from the paraview
-from paraview.simple import *
+# external dependencies
+from paraview.simple import * # import the simple module from the paraview
 from vtk.util import numpy_support as nps	
 import numpy as np
 
+# internal dependencies
 from AneurysmGeneration.utils.batch import write_to_file
 
 
-def area_under_threshold(reader, tawss_upper=10.0, ):
+def area_under_threshold(reader, tawss_upper=10.0):
 	'''
-		input:
-
-		output:	
-
+	
+	Args:
+	    reader (XMLPolyDataReader): XMLPolyDataReader object used by pv simple functions to threshold, integrate contents of polydata file. 
+	    tawss_upper (float, optional): optional upper bound for evaluating the time-averaged wall shear stress. 
+	
+	Returns:
+	    area_fractions (nd_array): fractional surface areas exposed to successively increasing thresholds of tawss
+	
 	'''
 
 	threshold_bounds = np.arange(.05, tawss_upper, .5)
 	area_fractions = np.zeros(threshold_bounds.shape)
 
 	for i, curr_upper in enumerate(threshold_bounds):
-		# create a new 'Threshold'
 		threshold = Threshold(Input=reader)
 
-		# Properties modified on threshold1
 		threshold.Scalars = ['POINTS', 'vTAWSS']
 		threshold.ThresholdRange = [0.0, curr_upper]
 
-		# create a new 'Integrate Variables'
 		integrateVariables = IntegrateVariables(Input=threshold)
 		result = paraview.servermanager.Fetch(integrateVariables)
 
 		try:
-			area_fractions[i] = result.GetCellData().GetArray('Area').GetTuple(0)[0] #unwrap this shit 
+			area_fractions[i] = result.GetCellData().GetArray('Area').GetTuple(0)[0] 
 		except:
 			area_fractions[i] = 0
 
-	
-
-	# compute the total area
 	integrateVariables = IntegrateVariables(Input=reader)
 	result = paraview.servermanager.Fetch(integrateVariables)
 	total_area = result.GetCellData().GetArray('Area').GetTuple(0)[0]
 
 	area_fractions /= total_area
+
+	print 'the area fractions under threshold for TAWSS w/ upper bound: ', tawss_upper
 	print area_fractions
 
 	return area_fractions
+
 
 def extract_wss_cycle(reader, step_lower=3000, step_upper = 4000, tstep = 50):
 	'''

@@ -9,7 +9,6 @@ import numpy as np
 import vtk
 from vtk.util import numpy_support as nps 
 
-from mpl_toolkits.mplot3d import Axes3D
 from utils.interpolation import *
 from utils.normalization import *
 from utils.parser import *
@@ -46,7 +45,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	included_points = face_to_points[cur_face]
 	NoP_wall, wall_points = extract_points(wall_model)
 
-	#centerline=read_from_file('RCA_cl')
+	centerline=read_from_file('RCA_cl')
 
 	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(NoP_wall, centerline, wall_points, np.array(list(included_points)))
 
@@ -72,8 +71,6 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 								rad_shape=[np.mean(start_radii), rad_max, np.min(end_radii) ] 
 								)
 
-	# expand = interpolation_2d(start_border, end_border, start_radii, end_radii, wall_ref[wall_region], start, end-start)
-
 	expand_np = np.zeros((1, wall_model.GetNumberOfPoints() ))
 
 	for i, pointID in enumerate(wall_region):
@@ -98,16 +95,11 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 			displace = [r*expand[i] for r in wall_unit]
 			new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
 
-			# originally we try to use this centerline tilting thing but it's not that great, probably works a lot worse if we do it 
-			# after applying the oriignla displacements; if we had used it initially to compute displacements, maybe that would be better. 
-			# new_pt = [r - dr for (r, dr) in zip(new_pt, adjust[i])]
-
 		# after applying the displacement to the wall points, modify displacement magnitude for branch shift
 		displace_adjusted = [d - n for (d, n) in zip (displace, wall_normal)]
 
 		for face, points in intersect.iteritems():
 			if pointID in points:
-# 				print '> recording disp for prop to this face:', face
 				affected_face_displace[face].append(np.array(displace_adjusted))
 
 
@@ -145,7 +137,6 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	new.SetFileName(wall_name[:-4] + '_modified_' + suffix + '.vtp')
 	new.Write()
 
-
 	print 'done growing aneurysm!'
 	print '----------------------'
 
@@ -156,6 +147,7 @@ def main():
 	# define the location of models, centerlines, metadata and specify the wall_name
 	model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
 	wall_name = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/SKD0050_baseline_model.vtp"
+	targets_name = "/AneurysmGeneration/targets.txt"
 
 	# some options 
 	EASING = False
@@ -173,7 +165,6 @@ def main():
 	# find the names of the centerline files (without the .pth file ending)
 	# note: this matches centerline name to the np array with all the point data
 	centers, names = gather_centerlines(model_dir)
-	# resampled = [resample_centerline(centers[name]) for name in names]
 	resampled = read_from_file('centerlines')
 	
 	# some random code for plotting the centerlines 
@@ -202,7 +193,7 @@ def main():
 	# determine which caps belong to which faces by looking at intersections
 	point_to_face, face_to_cap = determine_overlap(face_to_points, cap_to_points, NoP)
 
-	options = batch_targets(names, corresponding_faces, resampled, BATCH, EASING)
+	options = batch_targets(names, corresponding_faces, resampled, targets_name, BATCH, EASING)
 	print names
 	print corresponding_faces
 

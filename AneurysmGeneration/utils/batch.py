@@ -45,7 +45,7 @@ def read_from_file(name):
 	return new_obj
 
 
-def read_targets(fname='/AneurysmGeneration/left_targets.txt', as_dict=False):
+def read_targets(fname, as_dict=False):
 	'''
 	reads a file called targets.txt that contains: 
 	[vessel id] [start pos] [length] [rad_max] [suffix] 
@@ -72,12 +72,12 @@ def read_targets(fname='/AneurysmGeneration/left_targets.txt', as_dict=False):
 	return targets
 
 
-def batch_targets(names, corresponding_faces, resampled, batch_status, easing):
+def batch_targets(names, corresponding_faces, resampled, targets_name, batch_status, easing):
 	'''
 
 	'''
 
-	targets = read_targets()
+	targets = read_targets(targets_name)
 	
 	if not batch_status:
 		targets = [targets[0]]

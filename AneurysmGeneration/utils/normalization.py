@@ -1,13 +1,14 @@
 '''
 	normalization.py
 
-	Provide utility functinos to project points from the wall polydata to the nearest point in centerline polydata. 
+	Provide utility functions to project points from the wall polydata to the nearest point in centerline polydata. 
 
 	Normalization and projections adapted from Justin's scripts. 
 '''
 import sys
 import numpy as np
 import vtk 
+
 
 def normalized_centerline(centerline_model):
 	'''
@@ -42,7 +43,6 @@ def normalized_centerline(centerline_model):
 		d_temp = np.sqrt(d_temp)
 		cur_length = cur_length + d_temp
 		normalized[i] = cur_length/centerline_length
-
 
 	return (NoP, normalized, centerline_length)
 
@@ -110,13 +110,14 @@ def minimize_distances(points_results, points_source):
 
 
 def compute_reference_norm(centerline):
-	'''
-		input: 
-			* centerline
-		output: 
-			* 
-	'''
-
+	"""Summary
+	
+	Args:
+	    centerline (ndarray): points in the centerline
+	
+	Returns:
+	    TYPE: Description
+	"""
 	print 'computing reference norms'
 	print '-------------------------'
 
@@ -136,13 +137,15 @@ def compute_reference_norm(centerline):
 
 
 def compute_theta(r, n, t):
-	'''
-		input: 
-			* r, a vector from centerline point to wall point
-			* n, the centerline's normal vector at the centerline point corresponding to the wall point
-			* t, the tangent vector corresponding to that centerline point
-		output: 
-			* theta, the angle between the two vectors in [-pi, pi]
+	'''	
+
+	Args:
+	    r (ndarray): a vector from centerline point to wall point
+	    n (ndarray): the centerline's normal vector at the centerline point corresponding to the wall point
+	    t (ndarray): the tangent vector corresponding to that centerline point
+	
+	Returns:
+	    theta (ndarray): the angle between the two vectors in [-pi, pi]
 	'''
 	
 
@@ -180,7 +183,7 @@ def projection(NoP, centerline, wall_points, included_ids):
 			* transformed_wall_ref, a np array of shape (NoP, 2) representing (axial pos, theta) for each point on the wall
 			* normalized_center, a list of normalized centerpoint positions 
 			* wall_to_center, dictionary of correspondences between wall point index -> closest centerpoint
-			* centerline_length, the lenght of the centerline
+			* centerline_length, the length of the centerline
 
 		For each wall point, go through all the centerline points and find the closest one. 
 
@@ -231,6 +234,32 @@ def projection(NoP, centerline, wall_points, included_ids):
 	print ""
 
 	return (transformed_wall_ref, normalized_center, wall_to_center, min_dists, centerline_length)
+
+
+def compute_curvature(r, rp, rpp): 
+    """Compute the local curvature as given in https://en.wikipedia.org/wiki/Curvature#Local_expressions 
+    
+    Args:
+        r (TYPE): Description
+        rp (TYPE): Description
+        rpp (TYPE): Description
+    """
+
+    curv = 'lol'
+
+
+    return curv
+
+if __name__ == "__main__": 
+
+	print 'testing normalization with curv computation'
+
+	c_path = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/wall_lca1.pth"
+
+	centerline = np.transpose(read_centerline(c_path))
+
+	print centerline
+	lol = resample_centerline(centerline)
 
 
 
