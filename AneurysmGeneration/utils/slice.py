@@ -171,6 +171,7 @@ def extract_points(polydata, pointIDs=None):
 	else: 
 		return points[pointIDs]
 
+
 def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.2, EPSILON=.01):
 	'''
 	input: 

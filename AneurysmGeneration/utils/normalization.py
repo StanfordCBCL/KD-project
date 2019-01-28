@@ -250,16 +250,7 @@ def compute_curvature(r, rp, rpp):
 
     return curv
 
-if __name__ == "__main__": 
 
-	print 'testing normalization with curv computation'
-
-	c_path = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/wall_lca1.pth"
-
-	centerline = np.transpose(read_centerline(c_path))
-
-	print centerline
-	lol = resample_centerline(centerline)
 
 
 

@@ -27,7 +27,8 @@ def area_under_threshold(reader, tawss_upper=10.0):
 	
 	'''
 
-	threshold_bounds = np.arange(.05, tawss_upper, .5)
+	threshold_bounds = np.arange(.0, tawss_upper, .5)
+	threshold_bounds[0] += .05
 	area_fractions = np.zeros(threshold_bounds.shape)
 
 	for i, curr_upper in enumerate(threshold_bounds):
