@@ -46,6 +46,29 @@ def return_polydata(path, return_reader=False):
 	return polydata
 
 
+def return_unstructured(path, return_reader=False): 
+	"""Summary
+	
+	Args:
+	    path (TYPE): Description
+	    return_reader (bool, optional): Description
+	
+	Returns:
+	    TYPE: Description
+	"""
+	reader = vtk.vtkXMLUnstructuredGridReader()
+	reader.SetFileName(path)
+	reader.Update()
+
+	unstructured = vtk.vtkUnstructuredGrid()
+	unstructured = reader.GetOutput()
+
+	if return_reader: 
+		return (unstructured, reader)
+
+	return unstructured
+
+
 def parse_command_line(args):
 	'''
 
@@ -309,63 +332,86 @@ def clip_vtu(fname_in, fname_out, unstructured_results):
 	extract_start.SetInputData(unstructured_results)
 	extract_start.SetImplicitFunction(plane_start)
 	extract_start.SetExtractBoundaryCells(True)
+	extract_start.Update()
+
+	extract_end = vtk.vtkExtractGeometry()
+	extract_end.SetInputData(extract_start.GetOutput())
+	extract_end.SetImplicitFunction(plane_end)
+	extract_end.SetExtractBoundaryCells(True)
+	extract_end.Update()
+
+	connect = vtk.vtkConnectivityFilter()
+	connect.SetInputConnection(extract_end.GetOutputPort())
+	connect.SetExtractionModeToLargestRegion()
+	connect.Update()
+
+	region = connect.GetOutput()
+
+	print region.GetNumberOfPoints()
+
+	clipped_writer = vtk.vtkXMLUnstructuredGridWriter()
+	clipped_writer.SetInputData(region)
+	clipped_writer.SetFileName(fname_out + '.vtu')
+	clipped_writer.Write()
 
 
 def main():
 
-	args = parse_command_line(sys.argv)
+	# args = parse_command_line(sys.argv)
 
-	# we need the face to points correspondence from the original source model 
-	# we only need to get this once 
-	(face_to_points, _, _, NoP) = read_from_file("big_boy")
+	# # we need the face to points correspondence from the original source model 
+	# # we only need to get this once 
+	# (face_to_points, _, _, NoP) = read_from_file("big_boy")
 
-	points_source = None
-	points_results = None
-	centerline = None
-	vessel_ids = None
-	vessel_points = None
-	faceID = 0
+	# points_source = None
+	# points_results = None
+	# centerline = None
+	# vessel_ids = None
+	# vessel_points = None
+	# faceID = 0
 
-	# get start and length from targets 
-	targets = read_targets(fname=args['targ_fname'], as_dict=True)
-	cl_choice, start, length, _ = targets[args['suff']]
+	# # get start and length from targets 
+	# targets = read_targets(fname=args['targ_fname'], as_dict=True)
+	# cl_choice, start, length, _ = targets[args['suff']]
 
-	if cl_choice == 2: 
-		centerline = read_from_file('RCA_cl')
-		faceID = 8
-	else: 
-		centerline = read_from_file('centerlines')[cl_choice]
-		faceID = 2
+	# if cl_choice == 2: 
+	# 	centerline = read_from_file('RCA_cl')
+	# 	faceID = 8
+	# else: 
+	# 	centerline = read_from_file('centerlines')[cl_choice]
+	# 	faceID = 2
 
-	if args['vtk']: 
-		points_source, points_results = get_points(args['source'], args['results'], args['suff'])
+	# if args['vtk']: 
+	# 	points_source, points_results = get_points(args['source'], args['results'], args['suff'])
 
-	elif args['pkl']:
-		points_source, points_results = read_from_file('points_' + args['suff'])
+	# elif args['pkl']:
+	# 	points_source, points_results = read_from_file('points_' + args['suff'])
 
-	if args['mapping']:
-		vessel_ids, vessel_points = compute_mapping(centerline, points_source, points_results, face_to_points[faceID], args['suff'], save_to_disk=True)
+	# if args['mapping']:
+	# 	vessel_ids, vessel_points = compute_mapping(centerline, points_source, points_results, face_to_points[faceID], args['suff'], save_to_disk=True)
 
-	if args['post']:
+	# if args['post']:
 
-		all_results_path = args['results']
+	# 	all_results_path = args['results']
 
-		poly_results = return_polydata(all_results_path)
+	# 	poly_results = return_polydata(all_results_path)
 
-		if vessel_ids is None or vessel_points is None: 
-			vessel_ids, vessel_points = read_from_file('mapped_'+args['suff'])
+	# 	if vessel_ids is None or vessel_points is None: 
+	# 		vessel_ids, vessel_points = read_from_file('mapped_'+args['suff'])
 
-		post_process_clip(centerline, 
-						points_results, 
-						poly_results, 
-						vessel_ids, 
-						vessel_points, 
-						start, 
-						length, 
-						NoP,
-						args['outdir'] + args['suff'],
-						save_to_disk=True)
-			
+	# 	post_process_clip(centerline, 
+	# 					points_results, 
+	# 					poly_results, 
+	# 					vessel_ids, 
+	# 					vessel_points, 
+	# 					start, 
+	# 					length, 
+	# 					NoP,
+	# 					args['outdir'] + args['suff'],
+	# 					save_to_disk=True)
+	
+	unstructured_results = return_unstructured('Artificial/LAD/ASI4/lad1/all_results.vtu') 
+	clip_vtu('lmao', 'clipped_lmao', unstructured_results)
 
 
 if __name__ == "__main__":
