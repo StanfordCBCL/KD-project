@@ -7,6 +7,48 @@
 import numpy as np
 import pickle
 import os
+import vtk
+
+
+def return_unstructured(path, return_reader=False): 
+	"""Summary
+	
+	Args:
+	    path (TYPE): Description
+	    return_reader (bool, optional): Description
+	
+	Returns:
+	    TYPE: Description
+	"""
+	reader = vtk.vtkXMLUnstructuredGridReader()
+	reader.SetFileName(path)
+	reader.Update()
+
+	unstructured = vtk.vtkUnstructuredGrid()
+	unstructured = reader.GetOutput()
+
+	if return_reader: 
+		return (unstructured, reader)
+
+	return unstructured
+
+
+def return_polydata(path, return_reader=False):
+	'''
+		Given a file name, open and return the data
+	'''
+
+	print 'return polydata'
+	
+	reader = vtk.vtkXMLPolyDataReader()
+	reader.SetFileName(path)
+	reader.Update()
+	polydata = reader.GetOutput()
+
+	if return_reader:
+		return (polydata, reader)
+
+	return polydata
 
 
 def aggregate_options(start=.1, length=.1, rad_max=.8, easing=True, cur_name=None, cur_center=None, cur_face=None, expansion_mode='absolute', suffix=None):
@@ -70,6 +112,71 @@ def read_targets(fname, as_dict=False):
 	if as_dict: 
 		return {target[-1]:target[:-1] for target in targets}
 	return targets
+
+
+def collect_target_dictionary(side='R'): 
+	"""Summary
+	
+	Args:
+	    fname (TYPE): Description
+	    side (str, optional): Description
+	
+	Returns:
+	    TYPE: Description
+	"""
+	if side == 'R': 
+		return {
+		'ASI2': {'p1': [2, .17, 1.3068, .3267],
+				'p2': [2, .17, 1.5404, .3851], 
+				'p3': [2, .17, 1.7740, .4435], 
+				'p4': [2, .17, 2.0076, .5019], 
+				'p5': [2, .17, 2.22412, .5603], 
+				'm1': [2, .55, 1.3068 ,.3267], 
+				'm2': [2, .55, 1.5404, .3851], 
+				'm3': [2, .55, 1.7740, .4435], 
+				'm4': [2, .55, 2.0076, .5019], 
+				'm5': [2, .55, 2.22412, .5603], 
+				'd1': [2, .77, 1.3068 ,.3267], 
+				'd2': [2, .77, 1.5404, .3851], 
+				'd3': [2, .77, 1.7740, .4435], 
+				'd4': [2, .77, 2.0076, .5019], 
+				'd5': [2, .77, 2.22412, .5603], 
+				},
+		'ASI6': {'p1': [2, .17, 3.9205, .3267], 
+				'p2': [2 ,.17, 4.6213, .3851 ], 
+				'p3': [2, .17, 5.3221, .4435], 
+				'p4': [2, .17, 6.0229, .5019], 
+				'p5': [2, .17, 6.7236, .5603], 
+				},
+		'ASI4': { 'p1': [2, .17, 2.6137, .3267], 
+				'p2': [2, .17, 3.0809, .3851], 
+				'p3': [2, .17, 3.5481, .4435], 
+				'p4': [2, .17, 4.0152, .5019], 
+				'p5': [2, .17, 4.4824, .5603],
+				}
+		}
+	elif side == 'L': 
+		return {
+		'ASI2': {'lad1': [0, .23, 1.1846, .29615], 
+				'lad2': [0, .23, 1.3801, .34502], 
+				'lad3': [0, .23, 1.5755, .39388],
+				'lad4': [0, .23, 1.7710, .44274], 
+				'lad5': [0, .23, 1.9664, .49161],
+				},
+		'ASI6': {'lad1': [0, .235, 3.5539, .29615], 
+				'lad2': [0, .235, 4.1402, .34502], 
+				'lad3': [0, .235, 4.7266, .39388], 
+				'lad4': [0, .235, 5.3129, .44274], 
+				'lad5': [0, .235, 5.8993, .49161],
+				},
+		'ASI4': {'lad1': [0, .235, 2.3692, .29615], 
+				'lad2': [0, .235, 2.7601, .34502],
+				'lad3': [0, .235, 3.1510, .39388 ], 
+				'lad4': [0, .235, 3.5419, .44274], 
+				'lad5': [0, .235, 3.9328, .49161]
+				},
+		}
+	
 
 
 def batch_targets(names, corresponding_faces, resampled, targets_name, batch_status, easing):
