@@ -9,6 +9,7 @@ import numpy as np
 from vtk.util import numpy_support as nps
 import argparse
 import sys
+from tqdm import tqdm
 
 from AneurysmGeneration.utils.batch import return_unstructured 
 
@@ -16,11 +17,15 @@ from AneurysmGeneration.utils.batch import return_unstructured
 def parse_commandline(argv): 
 	"""Collects command line arguments passed in, returns them as a dictionary. Provides some usage documentation features. 
 	
-	Args:
-	    argv (list): sys.argv for passing using argparse
+	Parameters
+	----------
+	argv : list
+	    sys.argv for parsing using argparse
 	
-	Returns:
-	    args (dict): dictionary mapping named commandline arguments to supplied values parsed out of sys.argv
+	Returns
+	-------
+	args : dict
+	    dictionary mapping named commandline arguments to supplied values parsed out of sys.argv
 	"""
 	print 'parsing command line'
 
@@ -41,19 +46,26 @@ def collect_field_of_interest(prefix, tsteps, extract_field='temperature', as_np
 	and returns a list of these arrays. Assumes that result files being parsed are named with format
 	|prefix|+[time_step].vtu  
 	
-	Args:
-	    prefix (str): path, naming prefix to results files that should be parsed
-	    tsteps (list): list of integer time steps that should be included in the aggregated result file
-	    extract_field (str, optional): name of the vtk point data array that should be extracted. by default, 
-	    								we will be extracting 'temperature' from advection-diffusion simulations.
-	    as_np (bool, optional): optionally, convert vtk point data arrays to np arrays instead
+	Parameters
+	----------
+	prefix : str
+	    path, naming prefix to results files that should be parsed
+	tsteps : list
+	    list of integer time steps that should be included in the aggregated result file
+	extract_field : str, optional
+	    name of the vtk point data array that should be extracted. by default, 
+	    we will be extracting 'temperature' from advection-diffusion simulations.
+	as_np : bool, optional
+	    optionally, convert vtk point data arrays to np arrays instead
 	
-	Returns:
-	    compiled (list): list of collected arrays (1 from each of the result files), with names set to 
-	    				correspond to |extract_field| + [time_step]
+	Returns
+	-------
+	compiled : list
+	    list of collected arrays (1 from each of the result files), with names set to 
+	    correspond to |extract_field| + [time_step]
 	"""
 	compiled = []
-	for step in tsteps: 
+	for step in tqdm(tsteps, desc='extracting from results:', file=sys.stdout): 
 		results = return_unstructured(prefix + str(step) + '.vtu')
 		field = results.GetPointData().GetArray(extract_field)
 		field.SetName(extract_field+'_'+str(step))
@@ -70,19 +82,24 @@ def aggregate_fields_of_interest(first_file, output_dest, compiled, extract_fiel
 	Arbitrarily picks one of the .vtu files to preserve points, connectivity, pressure, velocity
 	information. 
 	
-	Args:
-	    first_file (str): a str path to a vtu file that will serve as the template for copying in the 
-	    				remaining fields of interest.
-	    output_dest (str): the filename for writing out a .vtu combined file
-	    compiled (list): list of vtk point data arrays that should be copied into first_file
-	    extract_field (str, optional): the name of the arrays that we're extracting 
-	    								this is used to remove the original array from the first file.
+	Parameters
+	----------
+	first_file : str
+	    a str path to a vtu file that will serve as the template for copying in the 
+	    remaining fields of interest.
+	output_dest : str
+	    the filename for writing out a .vtu combined file
+	compiled : list
+	    list of vtk point data arrays that should be copied into first_file
+	extract_field : str, optional
+	    the name of the arrays that we're extracting 
+	    this is used to remove the original array from the first file.
 	
 	"""
 	dummy, reader = return_unstructured(first_file, return_reader=True)
 	dummy.GetPointData().RemoveArray(extract_field)
 
-	for field in compiled: 
+	for field in tqdm(compiled, desc='writing results:', file=sys.stdout): 
 		dummy.GetPointData().AddArray(field)
 		reader.Update()
 
@@ -98,7 +115,7 @@ def main():
 	tsteps = list(range(args['start'], args['stop'], args['incr'])) + [args['stop']]
 
 	compiled = collect_field_of_interest(args['result_prefix'], tsteps)
-	aggregate_fields_of_interest(args['result_prefix'] + str(args['start']), args['out_path'], compiled)
+	aggregate_fields_of_interest(args['result_prefix'] + str(args['start']) + '.vtu', args['out_path'], compiled)
 
 
 if __name__ == "__main__": 
