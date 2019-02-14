@@ -65,7 +65,7 @@ def collect_field_of_interest(prefix, tsteps, extract_field='temperature', as_np
 	    correspond to |extract_field| + [time_step]
 	"""
 	compiled = []
-	for step in tqdm(tsteps, desc='extracting from results:', file=sys.stdout): 
+	for step in tqdm(tsteps, desc='extracting from results', file=sys.stdout): 
 		results = return_unstructured(prefix + str(step) + '.vtu')
 		field = results.GetPointData().GetArray(extract_field)
 		field.SetName(extract_field+'_'+str(step))
@@ -99,7 +99,7 @@ def aggregate_fields_of_interest(first_file, output_dest, compiled, extract_fiel
 	dummy, reader = return_unstructured(first_file, return_reader=True)
 	dummy.GetPointData().RemoveArray(extract_field)
 
-	for field in tqdm(compiled, desc='writing results:', file=sys.stdout): 
+	for field in tqdm(compiled, desc='writing results', file=sys.stdout): 
 		dummy.GetPointData().AddArray(field)
 		reader.Update()
 

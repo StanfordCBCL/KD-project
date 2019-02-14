@@ -14,15 +14,16 @@
 	2. determine the distribution of tawss (%area at continuous cutoff)
 '''
 
-# dependency imports
+# external dependencies
 import numpy as np
 import vtk
 from vtk.util import numpy_support as nps	
 import sys
 import os
 import argparse
+from tqdm import tqdm
 
-# package imports
+# internal modules
 from AneurysmGeneration.utils.batch import *
 from AneurysmGeneration.utils.normalization import *
 from AneurysmGeneration.utils.slice import *
@@ -35,19 +36,62 @@ def parse_command_line(args):
 	
 	print 'parsing command line'
 
-	parser = argparse.ArgumentParser(description='lol')
-	parser.add_argument('--source', action="store", type=str, default="AneurysmGeneration/models/SKD0050/SKD0050_baseline_model_modified_p1.vtp")
-	parser.add_argument('--results', action="store", type=str, default="Artificial/RCA/p1/all_results.vtp")
-	parser.add_argument('--outdir', action="store", type=str, default='clipped_results_short/')
-	parser.add_argument('--pkl', dest='pkl', action='store_true')
-	parser.add_argument('--vtk', dest='vtk', action='store_true')
-	parser.add_argument('--mapping', dest='mapping', action='store_true')
-	parser.add_argument('--debug', dest='debug', action='store_true')
-	parser.add_argument('--post', dest='post', action='store_true')
-	parser.add_argument('--clip', dest='clip', action='store_true')
+	parser = argparse.ArgumentParser(description='Integrated pipeline for processing simulation result including \
+												with mapping, clipping to extract aneurysm regions from .vtp; also \
+												supports clipping of associated .vtu file')
+	parser.add_argument('--source', 
+						action="store", 
+						type=str, 
+						default="AneurysmGeneration/models/SKD0050/SKD0050_baseline_model_modified_p1.vtp"
+						)
+	parser.add_argument('--results', 
+						action="store", 
+						type=str, 
+						default="Artificial/RCA/p1/all_results.vtp"
+						)
+	parser.add_argument('--outdir', 
+						action="store", 
+						type=str, 
+						default='clipped_results_short/'
+						)
+	parser.add_argument('--pkl', 
+						dest='pkl', 
+						action='store_true'
+						)
+	parser.add_argument('--vtk', 
+						dest='vtk',
+						action='store_true'
+						)
+	parser.add_argument('--vtu', 
+						dest='vtu',
+						action='store_true'
+						)
+	parser.add_argument('--mapping', 
+						dest='mapping', 
+						action='store_true'
+						)
+	parser.add_argument('--debug', 
+						dest='debug', 
+						action='store_true'
+						)
+	parser.add_argument('--post', 
+						dest='post', 
+						action='store_true'
+						)
+	parser.add_argument('--clip', 
+						dest='clip', 
+						action='store_true'
+						)
 
-	parser.add_argument('--targ_fname', action="store", type=str, default='/AneurysmGeneration/targets.txt')
-	parser.add_argument('--suff', action="store", type=str, default='p1')
+	parser.add_argument('--suff', 
+						action="store", 
+						type=str, 
+						default='p1'
+						)
+	parser.add_argument('--shape',
+						action="store",
+						type=str,
+						default='ASI2')
 	
 	args = vars(parser.parse_args())
 
@@ -133,17 +177,13 @@ def compute_mapping(centerline, points_source, points_results, correct_face, suf
 	bounded_source_idx = apply_bounding_box(centerline, points_source)[0]
 	bounded_results_idx = apply_bounding_box(centerline, points_results)[0]
 
-	# chunk one of the arrays so that we don't run out of memory when we 
-	# perform the vectorized distance computation
-
-	n_splits = len(bounded_results_idx)//100
-
 	mapping = np.zeros(points_results.shape[0])
 
-	for i in range(n_splits):
+	# chunk one of the arrays so that we don't run out of memory when we 
+	# perform the vectorized distance computation
+	n_splits = len(bounded_results_idx)//100
 
-		print '> split', i, '/', n_splits - 1, '		\r',
-		sys.stdout.flush()
+	for i in tqdm(range(n_splits), desc='splitting mapping computation', file=sys.stdout):
 
 		cur_idx = bounded_results_idx[block_sz*i:block_sz*(i+1)]
 
@@ -169,7 +209,13 @@ def compute_mapping(centerline, points_source, points_results, correct_face, suf
 	return vessel_ids, vessel_points
 
 
-def post_process_clip(centerline, points_results, poly_results, vessel_ids, vessel_points, start, length, NoP, fname_out, save_to_disk, save_parameters=True): 
+def post_process_clip(centerline, points_results, poly_results, 
+					vessel_ids, vessel_points, 
+					start, length, NoP, 
+					outdir, 
+					suff,
+					save_to_disk, 
+					save_parameters=True): 
 	"""Summary
 	
 	Args:
@@ -184,7 +230,12 @@ def post_process_clip(centerline, points_results, poly_results, vessel_ids, vess
 	    fname_out (TYPE): Description
 	    save_to_disk (TYPE): Description
 	    save_parameters (bool, optional): Description
+	
+	Returns:
+	    tuple: Description
 	"""
+	print 'doing post_process_clip routine'
+
 	# use normalization utils to map mesh points onto the centerline
 	wall_ref, _, wall_to_center, min_dists, centerline_length = projection(NoP, centerline, points_results, vessel_ids)
 
@@ -245,12 +296,12 @@ def post_process_clip(centerline, points_results, poly_results, vessel_ids, vess
 	extract_end.Update()
 
 	# ------------- connectivity to make sure we're extracting correctly -------------------
-	# connectivity filter with SetExtractionModeToPointSeededRegions()
 	connect = vtk.vtkPolyDataConnectivityFilter()
 	connect.SetInputData(extract_end.GetOutput())
-	connect.SetExtractionModeToPointSeededRegions()
-	#connect.AddSeed(wall_region[100])
-	connect.AddSeed(wall_region[len(wall_region)/2]) # use an arbitrary point id from within the wall region to seed the connectivity filter
+	connect.SetExtractionModeToLargestRegion()
+	# connect.SetExtractionModeToPointSeededRegions()
+	# # use an arbitrary point id from within the wall region to seed the connectivity filter
+	# connect.AddSeed(wall_region[len(wall_region)/2]) 
 	connect.Update()
 
 	region = connect.GetOutput()
@@ -261,22 +312,32 @@ def post_process_clip(centerline, points_results, poly_results, vessel_ids, vess
 	if save_to_disk: 
 		clipped_writer = vtk.vtkXMLPolyDataWriter()
 		clipped_writer.SetInputData(region)
-		clipped_writer.SetFileName(fname_out + '.vtp')
+		clipped_writer.SetFileName(outdir + suff + '.vtp')
 		clipped_writer.Write()
 
 	if save_parameters:
-		write_to_file(fname_out + '_parameters', (origin_start, origin_end, span))
+		write_to_file(suff + '_parameters', (origin_start, origin_end, span))
+
+	print 'completed post_process_clip routine'
+
+	return (origin_start, origin_end, span)
 
 
-def clip_vtu(fname_in, fname_out, unstructured_results): 
+def clip_vtu(clip_parameters, fname_out, unstructured_results): 
 	"""Summary
 	
 	Args:
-	    fname_in (TYPE): Description
+	    clip_parameter_loc (TYPE): Description
 	    fname_out (TYPE): Description
 	    unstructured_results (TYPE): Description
+	
 	"""
-	origin_start, origin_end, span = read_from_file(fname_in + '_parameters')
+	print 'doing clip_vtu routine'
+
+	if isinstance(clip_parameters, str): 
+		origin_start, origin_end, span = read_from_file(clip_parameters)
+	else: 
+		origin_start, origin_end, span = clip_parameters
 
 	# define planes
 	plane_start = vtk.vtkPlane()
@@ -313,6 +374,8 @@ def clip_vtu(fname_in, fname_out, unstructured_results):
 	clipped_writer.SetFileName(fname_out + '.vtu')
 	clipped_writer.Write()
 
+	print 'completed clip_vtu routine'
+
 
 def main():
 
@@ -331,7 +394,7 @@ def main():
 
 	# get start and length from targets 
 	targets = collect_target_dictionary(side='R')
-	cl_choice, start, length, _ = targets[args['suff']]
+	cl_choice, start, length, _ = targets[args['shape']][args['suff']]
 
 	if cl_choice == 2: 
 		centerline = read_from_file('RCA_cl')
@@ -358,19 +421,22 @@ def main():
 		if vessel_ids is None or vessel_points is None: 
 			vessel_ids, vessel_points = read_from_file('mapped_'+args['suff'])
 
-		post_process_clip(centerline, 
-						points_results, 
-						poly_results, 
-						vessel_ids, 
-						vessel_points, 
-						start, 
-						length, 
-						NoP,
-						args['outdir'] + args['suff'],
-						save_to_disk=True)
-	
-	unstructured_results = return_unstructured('Artificial/LAD/ASI4/lad1/all_results.vtu') 
-	clip_vtu('lmao', 'clipped_lmao', unstructured_results)
+		clip_parameters = post_process_clip(centerline, 
+											points_results, 
+											poly_results, 
+											vessel_ids, 
+											vessel_points, 
+											start, 
+											length, 
+											NoP,
+											args['outdir'], 
+											args['suff'],
+											save_to_disk=True)
+						
+		if args['vtu']: 
+			unstructured_results = return_unstructured(args['results'][:-3] + 'vtu') 
+			clip_vtu(clip_parameters, args['outdir'] + args['suff'], unstructured_results)
+			#clip_vtu(args['outdir'] + args['suff'] + '_parameters', 'clipped_lmao', unstructured_results)
 
 
 if __name__ == "__main__":
