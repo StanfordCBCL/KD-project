@@ -1,5 +1,4 @@
-# OS generated files #
-######################
+# OS generated files 
 .DS_Store
 .DS_Store?
 ._*
@@ -19,6 +18,7 @@ Thumbs.db
 AneurysmGeneration/test_environment/*.vtp
 AneurysmGeneration/pickles/*
 *.facenames
+*.vtp
 Artificial/
 clipped_results/
 clipped_results_short/
