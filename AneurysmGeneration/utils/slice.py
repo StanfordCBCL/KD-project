@@ -2,13 +2,18 @@
 	slice.py
 '''
 
+# external dependencies
 import numpy as np
 import sys
 import vtk
+from vtk.util import numpy_support as nps	
+
+# internal modules
 from parser import *
 from pathreader import read_centerline
 from normalization import normalized_centerline_pth
 from batch import write_to_file
+
 
 def determine_overlap(face_to_points, cap_to_points, NoP):
 	'''
@@ -138,16 +143,12 @@ def wall_isolation(face_list, cap_list, exclude, model_dir=None, wall_model=None
 		print 'done collecting point connectivity'
 		print '----------------------------'
 
-
-
-
 	print 'done isolating wall sections'
 	print '----------------------------'
 
 	if PICKLE:
 		write_to_file("big_boy", (face_to_points, cap_to_points, point_connectivity, NoP))
 	
-
 	return (face_to_points, cap_to_points, point_connectivity, NoP)
 
 
@@ -170,6 +171,11 @@ def extract_points(polydata, pointIDs=None):
 		return (NoP, points)
 	else: 
 		return points[pointIDs]
+
+
+def extract_gnids(path): 
+	unstructured_target = return_unstructured(path)
+	return nps.vtk_to_numpy(unstructured_target.GetPointData().GetArray('GlobalNodeID'))
 
 
 def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.2, EPSILON=.01):

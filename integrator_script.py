@@ -135,8 +135,8 @@ def main():
 	}
 
 	base_path = '/Users/alex/Documents/lab/KD-project/clipped_results_short/'
-#	vessel = 'RCA/'
-	vessel = 'LAD/'
+	vessel = 'RCA/'
+#	vessel = 'LAD/'
 #	shapes = ['ASI2', 'ASI6']
 	shapes = ['ASI2', 'ASI4', 'ASI6']
 	pos_sizes = None

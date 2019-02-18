@@ -219,9 +219,9 @@ def main():
 
 	path = '/Users/alex/Documents/lab/KD-project/clipped_results_short/' 
 	vessel = 'RCA/'
-	shape = 'ASI4'
-	mode = '.vtu'
-#	mode = '.vtp'
+	shape = 'ASI6'
+#	mode = '.vtu'
+	mode = '.vtp'
 	
 	suffs = ['p1', 'p5']
 #	suffs = ['lad1', 'lad2', 'lad3', 'lad4', 'lad5']
