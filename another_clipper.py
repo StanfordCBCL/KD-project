@@ -21,7 +21,6 @@ def clip_branch(polydata, normal, origin, extractor):
 	extract.SetInputData(polydata)
 	extract.SetImplicitFunction(plane)
 	extract.SetExtractBoundaryCells(True)
-#	extract.PassPointsOn()
 	extract.Update()
 
 	return extract.GetOutput()
@@ -40,7 +39,6 @@ def clip_branch_sphere(polydata, center, radius, extractor):
 	extract.SetExtractInside(False)
 	extract.SetImplicitFunction(sphere)
 	extract.SetExtractBoundaryCells(True)
-#	extract.PassPointsOn()
 	extract.Update()
 
 	return extract.GetOutput()
@@ -220,10 +218,10 @@ def main():
 	path = '/Users/alex/Documents/lab/KD-project/clipped_results_short/' 
 	vessel = 'RCA/'
 	shape = 'ASI6'
-#	mode = '.vtu'
-	mode = '.vtp'
+	mode = '.vtu'
+#	mode = '.vtp'
 	
-	suffs = ['p1', 'p5']
+	suffs = ['p2', 'p3', 'p4']
 #	suffs = ['lad1', 'lad2', 'lad3', 'lad4', 'lad5']
 
 	param_dict, all_sphere_clips = get_clip_parameters(vessel, shape)

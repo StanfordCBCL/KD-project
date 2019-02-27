@@ -237,15 +237,11 @@ def post_process_clip(centerline, points_results, poly_results,
 	print 'doing post_process_clip routine'
 
 	# use normalization utils to map mesh points onto the centerline
-	wall_ref, _, wall_to_center, min_dists, centerline_length = projection(NoP, centerline, points_results, vessel_ids)
+	wall_ref, _, _, _, centerline_length = projection(NoP, centerline, points_results, vessel_ids)
 
 	end = start+length/centerline_length
 
 	wall_region, axial_pos, theta_pos, start_id, end_id = obtain_expansion_region(wall_ref, NoP, vessel_ids, start=start, end=end)
-
-	v_tawss = nps.vtk_to_numpy(poly_results.GetPointData().GetArray('vTAWSS'))
-
-	print np.mean(v_tawss[wall_region])
 
 	# ------------- isolate clipping boundaries -------------------
 	points_start = extract_points(poly_results, start_id)
@@ -256,14 +252,14 @@ def post_process_clip(centerline, points_results, poly_results,
 	origin_start = np.mean(points_start, axis=0)
 	origin_end = np.mean(points_end, axis=0)
 
-	print origin_start
-	print origin_end
+	# print origin_start
+	# print origin_end
 
 	# span, that we can use to ensure that the normals face in the right direction
 	span = origin_end - origin_start
 	span /= np.linalg.norm(span)
 
-	print span
+	# print span
 
 	# shift the origin by a bit 
 	alpha = .02
@@ -299,14 +295,11 @@ def post_process_clip(centerline, points_results, poly_results,
 	connect = vtk.vtkPolyDataConnectivityFilter()
 	connect.SetInputData(extract_end.GetOutput())
 	connect.SetExtractionModeToLargestRegion()
-	# connect.SetExtractionModeToPointSeededRegions()
-	# # use an arbitrary point id from within the wall region to seed the connectivity filter
-	# connect.AddSeed(wall_region[len(wall_region)/2]) 
 	connect.Update()
 
 	region = connect.GetOutput()
 
-	print region.GetNumberOfPoints()
+	print 'output region has NoP:', region.GetNumberOfPoints()
 
 	# ------------- write the new clipped region to disk -------------------
 	if save_to_disk: 
@@ -436,7 +429,6 @@ def main():
 		if args['vtu']: 
 			unstructured_results = return_unstructured(args['results'][:-3] + 'vtu') 
 			clip_vtu(clip_parameters, args['outdir'] + args['suff'], unstructured_results)
-			#clip_vtu(args['outdir'] + args['suff'] + '_parameters', 'clipped_lmao', unstructured_results)
 
 
 if __name__ == "__main__":

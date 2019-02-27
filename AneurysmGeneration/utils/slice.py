@@ -12,7 +12,7 @@ from vtk.util import numpy_support as nps
 from parser import *
 from pathreader import read_centerline
 from normalization import normalized_centerline_pth
-from batch import write_to_file
+from batch import write_to_file, return_unstructured
 
 
 def determine_overlap(face_to_points, cap_to_points, NoP):

@@ -8,6 +8,7 @@
 import sys
 import numpy as np
 import vtk 
+from tqdm import tqdm
 
 
 def normalized_centerline(centerline_model):
@@ -90,7 +91,7 @@ def normalized_centerline_pth(center):
 	NoP = len(center)
 	normalized = np.zeros(NoP)
 
-	for i in range(1, NoP):
+	for i in tqdm(range(1, NoP), desc='splitting centerline normalization', file=sys.stdout):
 		pt = center[i]
 		prev_pt = center[i-1]
 		d_temp = vtk.vtkMath.Distance2BetweenPoints(pt, prev_pt)
@@ -213,11 +214,10 @@ def projection(NoP, centerline, wall_points, included_ids):
 	chunk_sz = 500
 	n_chunks = len(included_ids)//chunk_sz
 
-	for c in range(n_chunks):
-		print '> chunk ', c, '/', n_chunks -1, '		\r',
-		sys.stdout.flush()
+	for c in tqdm(range(n_chunks), desc='splitting projection computation', file=sys.stdout):
 		id_chunk = included_ids[c*chunk_sz:(c+1)*chunk_sz]
-		if c == n_chunks - 1: id_chunk = included_ids[c*chunk_sz:]
+		if c == n_chunks - 1: 
+			id_chunk = included_ids[c*chunk_sz:]
 
 		center_indices, dists = minimize_distances(wall_points[id_chunk], centerline)
 		min_dists[id_chunk] = dists.reshape(len(id_chunk), 1)
@@ -230,8 +230,6 @@ def projection(NoP, centerline, wall_points, included_ids):
 
 		for pointID, center_idx in zip(id_chunk, center_indices): 
 			wall_to_center[pointID] = centerline[center_idx]
-
-	print ""
 
 	return (transformed_wall_ref, normalized_center, wall_to_center, min_dists, centerline_length)
 

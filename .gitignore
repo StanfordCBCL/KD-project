@@ -24,6 +24,7 @@ clipped_results/
 clipped_results_short/
 AneurysmGeneration/models/
 paraview_states/
+*tagFile*
 
 # keep simvascular projects local
 sv_projects/

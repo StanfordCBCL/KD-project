@@ -1,8 +1,8 @@
-        integer, parameter :: n = 501518
+        integer, parameter :: n = 510181
         integer nodes, fid, a
         integer, dimension(:) , allocatable :: roi
         CHARACTER*1024 filename
-        filename = "ASI4_p5_nodes.txt"
+        filename = "ASI6_p4_nodes.txt"
         nodes = 0
         fid = 1 
         OPEN (fid, FILE=TRIM(fileName))
@@ -26,7 +26,7 @@
         close(fid)
     
     
-        open(1,file="tagFile_asi4_p5")
+        open(1,file="tagFile_asi6_p4")
         write(1,*) n, 1
         
         do i=1, n
