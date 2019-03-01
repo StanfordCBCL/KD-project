@@ -54,6 +54,11 @@ def parse_command_line(args):
 						type=str, 
 						default='clipped_results_short/'
 						)
+	parser.add_argument('--baseline_dir', 
+						action="store",
+					    type=str,
+					    default='Artificial/baseline/all_results.vtu',
+					    )
 	parser.add_argument('--pkl', 
 						dest='pkl', 
 						action='store_true'
@@ -66,6 +71,10 @@ def parse_command_line(args):
 						dest='vtu',
 						action='store_true'
 						)
+	parser.add_argument('--baseline', 
+					    dest='baseline',
+					    action='store_true',
+					    )
 	parser.add_argument('--mapping', 
 						dest='mapping', 
 						action='store_true'
@@ -82,7 +91,6 @@ def parse_command_line(args):
 						dest='clip', 
 						action='store_true'
 						)
-
 	parser.add_argument('--suff', 
 						action="store", 
 						type=str, 
@@ -92,7 +100,7 @@ def parse_command_line(args):
 						action="store",
 						type=str,
 						default='ASI2')
-	
+
 	args = vars(parser.parse_args())
 
 	return args
@@ -374,6 +382,8 @@ def main():
 
 	args = parse_command_line(sys.argv)
 
+	print args['baseline_dir']
+
 	# we need the face to points correspondence from the original source model 
 	# we only need to get this once 
 	(face_to_points, _, _, NoP) = read_from_file("big_boy")
@@ -425,8 +435,12 @@ def main():
 											args['outdir'], 
 											args['suff'],
 											save_to_disk=True)
-						
-		if args['vtu']: 
+					
+		if args['baseline']	: 
+			unstructured_results = return_unstructured(args['baseline_dir'])
+			clip_vtu(clip_parameters, args['outdir'] + 'baseline_' + args['shape'] + '_' + args['suff'], unstructured_results)
+
+		elif args['vtu']: 
 			unstructured_results = return_unstructured(args['results'][:-3] + 'vtu') 
 			clip_vtu(clip_parameters, args['outdir'] + args['suff'], unstructured_results)
 

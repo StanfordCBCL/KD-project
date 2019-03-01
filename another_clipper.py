@@ -65,7 +65,11 @@ def apply_clipping(path, vessel, shape, suff,
 	"""
 	print 'entering apply_clipping'
 
-	results = reader(path + vessel + shape + suff + extension)
+	#in_file = path + vessel + shape + suff + extension
+	in_file = path + vessel + 'baseline_' + shape[:-1] + '_' + suff + extension
+	out_file = in_file
+
+	results = reader(in_file)
 
 	for normal, origin in zip(normals, origins): 
 		results = clip_branch(results, normal, origin, extractor)
@@ -78,7 +82,7 @@ def apply_clipping(path, vessel, shape, suff,
 
 	clip_writer = writer
 	clip_writer.SetInputData(results)
-	clip_writer.SetFileName(path + vessel + shape + suff + extension)
+	clip_writer.SetFileName(out_file)
 	clip_writer.Write()
 
 	print 'exiting apply_clipping'
@@ -173,6 +177,11 @@ def get_clip_parameters(vessel, shape):
 	'lad5': [np.array([[-11.2788046, 11.9514549, -4.338]]), np.array([1.1758710])]
 	}
 
+	# for baseline 
+	baseline_asi6 = {
+	'p3': [np.array([[-6.123437017530347, 13.913183990918712, -7.016436]]), np.array([[-0.275173, -0.9606578, -.03763556]])]
+	}
+
 	# encapsulate all these dicts for extensibility
 	rca_total = {
 	'ASI2': None,
@@ -184,6 +193,12 @@ def get_clip_parameters(vessel, shape):
 	'ASI2': lad_asi2,
 	'ASI4': lad_asi4,
 	'ASI6': lad_asi6,
+	}
+
+	baseline_total = {
+	'ASI2': None,
+	'ASI4': None,
+	'ASI6': baseline_asi6,
 	}
 
 	all_sphere_clips = None
@@ -201,6 +216,9 @@ def get_clip_parameters(vessel, shape):
 		elif 'ASI6' in shape: 
 			all_sphere_clips = lad_asi6_spheres
 
+	elif 'baseline' in vessel: 
+		param_dict = baseline_total
+
 	return (param_dict[shape], all_sphere_clips)
 
 
@@ -216,12 +234,13 @@ def main():
 	# data structure is going to be dict of {suff : list of lists containing origins, normals}
 
 	path = '/Users/alex/Documents/lab/KD-project/clipped_results_short/' 
-	vessel = 'RCA/'
+	vessel = 'baseline/'
 	shape = 'ASI6'
 	mode = '.vtu'
 #	mode = '.vtp'
-	
-	suffs = ['p2', 'p3', 'p4']
+
+	suffs = ['p3']	
+#	suffs = ['p2', 'p3', 'p4']
 #	suffs = ['lad1', 'lad2', 'lad3', 'lad4', 'lad5']
 
 	param_dict, all_sphere_clips = get_clip_parameters(vessel, shape)
