@@ -27,6 +27,7 @@ from tqdm import tqdm
 from AneurysmGeneration.utils.batch import *
 from AneurysmGeneration.utils.normalization import *
 from AneurysmGeneration.utils.slice import *
+from AdvectionDiffusion.ad_utils import produce_tagfile
 
 
 def parse_command_line(args):
@@ -52,7 +53,7 @@ def parse_command_line(args):
 	parser.add_argument('--outdir', 
 						action="store", 
 						type=str, 
-						default='clipped_results_short/'
+						default=''
 						)
 	parser.add_argument('--baseline_dir', 
 						action="store",
@@ -71,6 +72,10 @@ def parse_command_line(args):
 						dest='vtu',
 						action='store_true'
 						)
+	parser.add_argument('--dry', 
+						dest='dry',
+						action='store_true'
+					   )
 	parser.add_argument('--baseline', 
 					    dest='baseline',
 					    action='store_true',
@@ -106,46 +111,19 @@ def parse_command_line(args):
 	return args
 
 
-def apply_bounding_box(centerline, points, offsets=np.array([.11, .15, .8])):
-	'''
-		apply a bounding box based on min/max in axis 0 of centerline to points, 
-		return the restricted indices
-		Apply some offsets to each direction so that we definitely get all the points that we're looking for 
-
-	'''
-
-	print 'applying bb'
-
-	upperbounds = np.amax(centerline, axis=0) + offsets
-	lowerbounds = np.amin(centerline, axis=0) - offsets
-	first = np.all(np.greater_equal(points, lowerbounds), axis=1)
-	print first 
-
-	inner = np.logical_and(
-			np.all(np.greater_equal(points, lowerbounds), axis=1), 
-			np.all(np.less_equal(points, upperbounds), axis=1) 
-			)
-	print inner
-	patch_index = np.where(
-		np.logical_and(
-			np.all(np.greater_equal(points, lowerbounds), axis=1), 
-			np.all(np.less_equal(points, upperbounds), axis=1) 
-			) 
-		)
-
-	return patch_index
-
-
 def get_points(source_model_path, all_results_path, suff): 
-	"""Summary
+	"""get_points -- utility function to return the point data of a source model and 
+	a results file, both as np arrays. 
+
+	A temporary pickle is written out for debugging purposes.
 	
 	Args:
-	    source_model_path (TYPE): Description
-	    all_results_path (TYPE): Description
-	    suff (TYPE): Description
+	    source_model_path (str): path to the source model
+	    all_results_path (str): path to the results file
+	    suff (str): suffix (denoting which shape, model we're we're working with)
 	
 	Returns:
-	    TYPE: Description
+	    points_source, points_results: two np arrays of shape (NoP, 3)
 	"""
 	# we need to get the source models
 	poly_source = return_polydata(source_model_path)
@@ -189,7 +167,7 @@ def compute_mapping(centerline, points_source, points_results, correct_face, suf
 
 	# chunk one of the arrays so that we don't run out of memory when we 
 	# perform the vectorized distance computation
-	n_splits = len(bounded_results_idx)//100
+	n_splits = len(bounded_results_idx)//block_sz
 
 	for i in tqdm(range(n_splits), desc='splitting mapping computation', file=sys.stdout):
 
@@ -212,9 +190,27 @@ def compute_mapping(centerline, points_source, points_results, correct_face, suf
 
 	vessel_points = points_results[vessel_ids]
 
+	write_to_file('debug_mapping_' + suff, mapped)
+
 	if save_to_disk: write_to_file('mapped_'+ suff, (vessel_ids, vessel_points))
 
 	return vessel_ids, vessel_points
+
+
+def debug_mapping(suff, poly_results): 
+
+	mapped = read_from_file('debug_mapping_' + suff)
+	mapped_vtk = nps.numpy_to_vtk(mapped)
+	mapped_vtk.SetName('Mapped')
+
+	poly_results.GetPointData().AddArray(mapped_vtk)
+
+	new=vtk.vtkXMLPolyDataWriter()
+	new.SetInputData(poly_results)
+	new.SetFileName('debug_'+ suff + '.vtp' )
+	new.Write()
+
+	return
 
 
 def post_process_clip(centerline, points_results, poly_results, 
@@ -222,7 +218,7 @@ def post_process_clip(centerline, points_results, poly_results,
 					start, length, NoP, 
 					outdir, 
 					suff,
-					save_to_disk, 
+					dry, 
 					save_parameters=True): 
 	"""Summary
 	
@@ -250,6 +246,26 @@ def post_process_clip(centerline, points_results, poly_results,
 	end = start+length/centerline_length
 
 	wall_region, axial_pos, theta_pos, start_id, end_id = obtain_expansion_region(wall_ref, NoP, vessel_ids, start=start, end=end)
+
+	# ------------- potential debugging -------------------
+
+	mapped = read_from_file('debug_mapping_' + suff)
+	mapped_vtk = nps.numpy_to_vtk(mapped)
+	mapped_vtk.SetName('Mapped')
+	poly_results.GetPointData().AddArray(mapped_vtk)
+
+	wall_ref_transpose = np.transpose(wall_ref).copy()
+
+	# add the normalized axial position wall array to the vtk file 
+	norm_wall_vtk = nps.numpy_to_vtk(wall_ref_transpose[0, :])
+	norm_wall_vtk.SetName('axial pos')
+	poly_results.GetPointData().AddArray(norm_wall_vtk)
+
+	# add the normalized theta position wall array to the vtk file
+	theta_wall_vtk = nps.numpy_to_vtk(wall_ref_transpose[1, :])
+	theta_wall_vtk.SetName('theta')
+	poly_results.GetPointData().AddArray(theta_wall_vtk)
+
 
 	# ------------- isolate clipping boundaries -------------------
 	points_start = extract_points(poly_results, start_id)
@@ -310,7 +326,7 @@ def post_process_clip(centerline, points_results, poly_results,
 	print 'output region has NoP:', region.GetNumberOfPoints()
 
 	# ------------- write the new clipped region to disk -------------------
-	if save_to_disk: 
+	if not dry: 
 		clipped_writer = vtk.vtkXMLPolyDataWriter()
 		clipped_writer.SetInputData(region)
 		clipped_writer.SetFileName(outdir + suff + '.vtp')
@@ -324,7 +340,7 @@ def post_process_clip(centerline, points_results, poly_results,
 	return (origin_start, origin_end, span)
 
 
-def clip_vtu(clip_parameters, fname_out, unstructured_results): 
+def clip_vtu(clip_parameters, outdir, shape, suff, unstructured_results, dry): 
 	"""Summary
 	
 	Args:
@@ -370,10 +386,17 @@ def clip_vtu(clip_parameters, fname_out, unstructured_results):
 
 	print region.GetNumberOfPoints()
 
-	clipped_writer = vtk.vtkXMLUnstructuredGridWriter()
-	clipped_writer.SetInputData(region)
-	clipped_writer.SetFileName(fname_out + '.vtu')
-	clipped_writer.Write()
+	if not dry: 
+		clipped_writer = vtk.vtkXMLUnstructuredGridWriter()
+		clipped_writer.SetInputData(region)
+		clipped_writer.SetFileName(outdir + suff + '.vtu')
+		clipped_writer.Write()
+
+	else: 
+		produce_tagfile(unstructured_results.GetNumberOfPoints(), 
+						nps.vtk_to_numpy(region.GetPointData().GetArray('GlobalNodeID')), 
+						'tagfile_' + shape.lower() + '_' + suff 
+						)
 
 	print 'completed clip_vtu routine'
 
@@ -381,8 +404,6 @@ def clip_vtu(clip_parameters, fname_out, unstructured_results):
 def main():
 
 	args = parse_command_line(sys.argv)
-
-	print args['baseline_dir']
 
 	# we need the face to points correspondence from the original source model 
 	# we only need to get this once 
@@ -415,6 +436,13 @@ def main():
 	if args['mapping']:
 		vessel_ids, vessel_points = compute_mapping(centerline, points_source, points_results, face_to_points[faceID], args['suff'], save_to_disk=True)
 
+	if args['debug']:
+		all_results_path = args['results']
+
+		poly_results = return_polydata(all_results_path)
+
+		debug_mapping(args['suff'], poly_results)
+
 	if args['post']:
 
 		all_results_path = args['results']
@@ -434,7 +462,7 @@ def main():
 											NoP,
 											args['outdir'], 
 											args['suff'],
-											save_to_disk=True)
+											args['dry'])
 					
 		if args['baseline']	: 
 			unstructured_results = return_unstructured(args['baseline_dir'])
@@ -442,7 +470,7 @@ def main():
 
 		elif args['vtu']: 
 			unstructured_results = return_unstructured(args['results'][:-3] + 'vtu') 
-			clip_vtu(clip_parameters, args['outdir'] + args['suff'], unstructured_results)
+			clip_vtu(clip_parameters, args['outdir'], args['shape'], args['suff'], unstructured_results, args['dry'])
 
 
 if __name__ == "__main__":

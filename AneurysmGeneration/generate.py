@@ -35,15 +35,30 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	print 'Preparing to grow aneurysm'
 	print '--------------------------'
 
-	
+	# access the included point ids
+	included_points = face_to_points[cur_face]
+
 	# open the polydata
 	wallreader = vtk.vtkXMLPolyDataReader()
 	wallreader.SetFileName(wall_name)
 	wallreader.Update()
 	wall_model = wallreader.GetOutput()
 
-	included_points = face_to_points[cur_face]
 	NoP_wall, wall_points = extract_points(wall_model)
+
+
+	# for i, pt in enumerate(included_points): 
+	# 	print pt
+	# 	print wall_points[pt]
+	# 	print wall_model.GetPoints().GetPoint(pt)
+	# 	if i > 5: 
+	# 		break
+	# print '--------------'
+
+	# for i, pt in enumerate(list(included_points)):
+	# 	print pt
+	# 	if i > 5: 
+	# 		break
 
 	centerline=read_from_file('RCA_cl')
 
@@ -71,8 +86,12 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 								rad_shape=[np.mean(start_radii), rad_max, np.min(end_radii) ] 
 								)
 
-	expand_np = np.zeros((1, wall_model.GetNumberOfPoints() ))
+	expand_np = np.zeros((wall_model.GetNumberOfPoints()))
 
+	for i in range(NoP_wall): 
+		if i in wall_region:
+			expand_np[i] = 1
+			
 	for i, pointID in enumerate(wall_region):
 
 		cur_pt = wall_model.GetPoints().GetPoint(pointID)
@@ -104,18 +123,25 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 
 		# alter the current point's coordinates to reflect expansion
-		wall_model.GetPoints().SetPoint(pointID, new_pt)
+		# wall_model.GetPoints().SetPoint(pointID, new_pt)
 
 		# record the displacement for visualization on the np array
-		expand_np[:,pointID] = np.linalg.norm(displace)
+		# expand_np[pointID] = 1 # np.linalg.norm(displace)
 
 	print '>>>  the maximum displacement: ', np.max(expand_np)
+	print '>>>  the wall ref shape: ', wall_ref.shape
 
 	shift_branches(wall_model, wall_region, intersect, originals, affected_face_displace, face_to_cap, face_to_points, point_connectivity, easing)
 	
+	# add min dist to vtk file, for debugging purposes
+	min_dist_vtk = nps.numpy_to_vtk(min_dists)
+	min_dist_vtk.SetName('mindistvtk')
+	wall_model.GetPointData().AddArray(min_dist_vtk)
+
+#	wall_model.Update()
 
 	# add the expansion norms to the vtk file
-	expand_vtk = nps.numpy_to_vtk(expand_np[0])
+	expand_vtk = nps.numpy_to_vtk(expand_np)
 	expand_vtk.SetName('expand norm')
 	wall_model.GetPointData().AddArray(expand_vtk)
 
@@ -148,6 +174,7 @@ def main():
 	model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
 	wall_name = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/SKD0050_baseline_model.vtp"
 	targets_name = "/AneurysmGeneration/targets.txt"
+	# targets_name = "/AneurysmGeneration/left_targets.txt"
 
 	# some options 
 	EASING = False
@@ -200,12 +227,13 @@ def main():
 	for option in options: 
 		print option['suffix']
 		grow_aneurysm(
-			wall_name, 
-			face_to_points, 
-			point_to_face, 
-			face_to_cap, 
-			point_connectivity, 
-			**option)
+						wall_name, 
+						face_to_points, 
+						point_to_face, 
+						face_to_cap, 
+						point_connectivity, 
+						**option
+					 )
 
 	
 	

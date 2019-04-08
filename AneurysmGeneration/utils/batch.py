@@ -55,7 +55,15 @@ def aggregate_options(start=.1, length=.1, rad_max=.8, easing=True, cur_name=Non
 	'''
 		Combine all the options into one dict for readability and such
 	'''
-	return {'start':start, 'length':length, 'rad_max':rad_max, 'easing':easing, 'centerline':cur_center, 'cur_face':cur_face, 'suffix':suffix, 'expansion_mode':expansion_mode}
+	return {'start':start, 
+			'length':length, 
+			'rad_max':rad_max, 
+			'easing':easing, 
+			'centerline':cur_center, 
+			'cur_face':cur_face, 
+			'suffix':suffix, 
+			'expansion_mode':expansion_mode
+			}
 
 
 def write_to_file(name, obj):

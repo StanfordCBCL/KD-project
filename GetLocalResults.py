@@ -90,7 +90,7 @@ def Get_TAWSS(NoW, NameList, MeshDirectory, AllResultsFile):
 
 			total_GlobalID.append( np.int(gNid[0]))
 
-		        index = np.where(gNid_array == np.int(gNid[0]))[0]
+		    index = np.where(gNid_array == np.int(gNid[0]))[0]
 
  			tawss_np[0,k]=np.double(results.GetPointData().GetArray('vTAWSS').GetTuple(index[0]))
 			osi_np[0,k]=np.double(results.GetPointData().GetArray('vOSI').GetTuple(index[0]))

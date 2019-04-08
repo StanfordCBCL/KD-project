@@ -77,7 +77,7 @@ def normalized_centerline_pth(center):
 
 	output: 
 		* NoP
-		* np array of length NoP, containing normalized coordinate for each
+		* np array of length NoP, containing normalized coordinate for each point
 		* total centerline length
 
 	Assigns each centerline point a total length-normalized position, holding assigned coordinate
@@ -174,21 +174,23 @@ def compute_theta(r, n, t):
 
 def projection(NoP, centerline, wall_points, included_ids):
 	'''
-		input: 
-			* wall polydata 
-			* centerline, the centerline points as np array of shape (NoP_center, 3) 
-			* wall_points, the points of the entire model as shape (NoP_wall, 3)
-			* included_ids, the set of point IDs for the vessel wall we are considering
 
-		output:
-			* transformed_wall_ref, a np array of shape (NoP, 2) representing (axial pos, theta) for each point on the wall
-			* normalized_center, a list of normalized centerpoint positions 
-			* wall_to_center, dictionary of correspondences between wall point index -> closest centerpoint
-			* centerline_length, the length of the centerline
+    For each wall point, go through all the centerline points and find the closest one. 
 
-		For each wall point, go through all the centerline points and find the closest one. 
-
-		Record the closest normalized centerline distance and centerline point's coordinates. 
+    Record the closest normalized centerline distance and centerline point's coordinates. 
+	
+	Args:
+	    NoP (int): number of points in the model
+	    centerline (TYPE): the centerline points as np array of shape (NoP_center, 3) 
+	    wall_points (TYPE): the points of the entire model as shape (NoP_wall, 3)
+	    included_ids (TYPE): the set of point IDs for the vessel wall we are considering
+	
+	Returns:
+	    transformed_wall_ref: a np array of shape (NoP, 2) representing (axial pos, theta) for each point on the wall
+	    normalized_center: a list of normalized centerpoint positions 
+	    wall_to_center: dictionary of correspondences between wall point index -> closest centerpoint
+	    min_dists: ndarray of shape (NoP, 1) 
+		centerline_length: the length of the centerline
 
 	'''
 
@@ -205,11 +207,11 @@ def projection(NoP, centerline, wall_points, included_ids):
 	# compute the angular reference positions
 	reference_norms, reference_tangents = compute_reference_norm(centerline)
 
-	# initialize wall axial pos
+	# initialize wall axial, theta pos
 	transformed_wall_ref = np.zeros((NoP, 2))
 
 	wall_to_center = {}
-	min_dists = np.zeros((NoP, 1))
+	min_dists = np.zeros(NoP)
 
 	chunk_sz = 500
 	n_chunks = len(included_ids)//chunk_sz
@@ -219,8 +221,7 @@ def projection(NoP, centerline, wall_points, included_ids):
 		if c == n_chunks - 1: 
 			id_chunk = included_ids[c*chunk_sz:]
 
-		center_indices, dists = minimize_distances(wall_points[id_chunk], centerline)
-		min_dists[id_chunk] = dists.reshape(len(id_chunk), 1)
+		center_indices, min_dists[id_chunk] = minimize_distances(wall_points[id_chunk], centerline)
 
 		r = wall_points[id_chunk] - centerline[center_indices]
 		n = reference_norms[center_indices]

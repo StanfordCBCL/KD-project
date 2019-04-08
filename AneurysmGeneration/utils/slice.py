@@ -183,6 +183,7 @@ def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.
 	input: 
 		* wall vtk polydata
 		* centerline as np array of xyz points
+		* included_points 
 		* optional region specification
 
 	output: 
@@ -228,6 +229,36 @@ def obtain_expansion_region(wall_ref, NoP_wall, included_points, start=.1, end=.
 	return (wall_region_id, axial_pos, theta_pos, start_id, end_id) 
 
 
+def apply_bounding_box(centerline, points, offsets=np.array([.11, .15, .8])):
+	'''
+		apply a bounding box based on min/max in axis 0 of centerline to points, 
+		return the restricted indices
+		Apply some offsets to each direction so that we definitely get all the points that we're looking for 
+
+	'''
+
+	print 'applying bb'
+
+	upperbounds = np.amax(centerline, axis=0) + offsets
+	lowerbounds = np.amin(centerline, axis=0) - offsets
+	first = np.all(np.greater_equal(points, lowerbounds), axis=1)
+	# print first 
+
+	inner = np.logical_and(
+			np.all(np.greater_equal(points, lowerbounds), axis=1), 
+			np.all(np.less_equal(points, upperbounds), axis=1) 
+			)
+	# print inner
+	patch_index = np.where(
+		np.logical_and(
+			np.all(np.greater_equal(points, lowerbounds), axis=1), 
+			np.all(np.less_equal(points, upperbounds), axis=1) 
+			) 
+		)
+
+	return patch_index
+
+	
 if __name__ == "__main__":
 
 	print "testing slice.py"
