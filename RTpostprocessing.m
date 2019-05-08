@@ -20,7 +20,6 @@ l=length(volume_integral(:,1)) ;
 % initialize variables
 norm_RT1 = 0;
 RT1 = 0;
-volume = 0;
 
 if no_offset
     time_integral = trapz(time ,volume_integral(l-1000 + 1:end,2) ) ;

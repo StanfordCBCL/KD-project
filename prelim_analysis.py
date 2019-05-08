@@ -28,6 +28,7 @@ from AneurysmGeneration.utils.batch import *
 from AneurysmGeneration.utils.normalization import *
 from AneurysmGeneration.utils.slice import *
 from AdvectionDiffusion.ad_utils import produce_tagfile
+from another_clipper import clip_side_branches_wrap
 
 
 def parse_command_line(args):
@@ -219,6 +220,7 @@ def post_process_clip(centerline, points_results, poly_results,
 					outdir, 
 					suff,
 					dry, 
+					vessel='RCA', shape='ASI4', 
 					save_parameters=True): 
 	"""Summary
 	
@@ -249,22 +251,22 @@ def post_process_clip(centerline, points_results, poly_results,
 
 	# ------------- potential debugging -------------------
 
-	mapped = read_from_file('debug_mapping_' + suff)
-	mapped_vtk = nps.numpy_to_vtk(mapped)
-	mapped_vtk.SetName('Mapped')
-	poly_results.GetPointData().AddArray(mapped_vtk)
+	# mapped = read_from_file('debug_mapping_' + suff)
+	# mapped_vtk = nps.numpy_to_vtk(mapped)
+	# mapped_vtk.SetName('Mapped')
+	# poly_results.GetPointData().AddArray(mapped_vtk)
 
-	wall_ref_transpose = np.transpose(wall_ref).copy()
+	# wall_ref_transpose = np.transpose(wall_ref).copy()
 
-	# add the normalized axial position wall array to the vtk file 
-	norm_wall_vtk = nps.numpy_to_vtk(wall_ref_transpose[0, :])
-	norm_wall_vtk.SetName('axial pos')
-	poly_results.GetPointData().AddArray(norm_wall_vtk)
+	# # add the normalized axial position wall array to the vtk file 
+	# norm_wall_vtk = nps.numpy_to_vtk(wall_ref_transpose[0, :])
+	# norm_wall_vtk.SetName('axial pos')
+	# poly_results.GetPointData().AddArray(norm_wall_vtk)
 
-	# add the normalized theta position wall array to the vtk file
-	theta_wall_vtk = nps.numpy_to_vtk(wall_ref_transpose[1, :])
-	theta_wall_vtk.SetName('theta')
-	poly_results.GetPointData().AddArray(theta_wall_vtk)
+	# # add the normalized theta position wall array to the vtk file
+	# theta_wall_vtk = nps.numpy_to_vtk(wall_ref_transpose[1, :])
+	# theta_wall_vtk.SetName('theta')
+	# poly_results.GetPointData().AddArray(theta_wall_vtk)
 
 
 	# ------------- isolate clipping boundaries -------------------
@@ -318,10 +320,16 @@ def post_process_clip(centerline, points_results, poly_results,
 	# ------------- connectivity to make sure we're extracting correctly -------------------
 	connect = vtk.vtkPolyDataConnectivityFilter()
 	connect.SetInputData(extract_end.GetOutput())
-	connect.SetExtractionModeToLargestRegion()
+	connect.SetExtractionModeToClosestPointRegion()
+	seed_id = wall_region[len(wall_region)/2]
+	x,y,z = poly_results.GetPoints().GetPoint(seed_id)
+	connect.SetClosestPoint(x,y,z)
+	# connect.SetExtractionModeToLargestRegion()
 	connect.Update()
 
 	region = connect.GetOutput()
+
+	# region = clip_side_branches_wrap(region, vessel, shape)
 
 	print 'output region has NoP:', region.GetNumberOfPoints()
 
@@ -337,10 +345,10 @@ def post_process_clip(centerline, points_results, poly_results,
 
 	print 'completed post_process_clip routine'
 
-	return (origin_start, origin_end, span)
+	return (origin_start, origin_end, span, (x,y,z))
 
 
-def clip_vtu(clip_parameters, outdir, shape, suff, unstructured_results, dry): 
+def clip_vtu(clip_parameters, outdir, shape, suff, unstructured_results, dry, vessel='RCA'): 
 	"""Summary
 	
 	Args:
@@ -352,9 +360,9 @@ def clip_vtu(clip_parameters, outdir, shape, suff, unstructured_results, dry):
 	print 'doing clip_vtu routine'
 
 	if isinstance(clip_parameters, str): 
-		origin_start, origin_end, span = read_from_file(clip_parameters)
+		origin_start, origin_end, span, (x,y,z) = read_from_file(clip_parameters)
 	else: 
-		origin_start, origin_end, span = clip_parameters
+		origin_start, origin_end, span, (x,y,z) = clip_parameters
 
 	# define planes
 	plane_start = vtk.vtkPlane()
@@ -379,12 +387,17 @@ def clip_vtu(clip_parameters, outdir, shape, suff, unstructured_results, dry):
 
 	connect = vtk.vtkConnectivityFilter()
 	connect.SetInputConnection(extract_end.GetOutputPort())
-	connect.SetExtractionModeToLargestRegion()
+	connect.SetExtractionModeToClosestPointRegion()
+	connect.SetClosestPoint(x,y,z)
 	connect.Update()
 
 	region = connect.GetOutput()
 
 	print region.GetNumberOfPoints()
+
+	# region = clip_side_branches_wrap(region, vessel, shape)
+
+	# print region.GetNumberOfPoints()
 
 	if not dry: 
 		clipped_writer = vtk.vtkXMLUnstructuredGridWriter()
@@ -462,7 +475,8 @@ def main():
 											NoP,
 											args['outdir'], 
 											args['suff'],
-											args['dry'])
+											args['dry'],
+											shape=args['shape'])
 					
 		if args['baseline']	: 
 			unstructured_results = return_unstructured(args['baseline_dir'])

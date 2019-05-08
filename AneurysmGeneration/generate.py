@@ -62,7 +62,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 	centerline=read_from_file('RCA_cl')
 
-	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(NoP_wall, centerline, wall_points, np.array(list(included_points)))
+	wall_ref, normalized_center, wall_to_center, min_dists, centerline_length = projection(NoP_wall, centerline, wall_points, np.arange(NoP_wall))# np.array(list(included_points)))
 
 	# compute the normalized length -> normalized end position
 	end=start+length/centerline_length
@@ -88,38 +88,38 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 
 	expand_np = np.zeros((wall_model.GetNumberOfPoints()))
 
-	for i in range(NoP_wall): 
-		if i in wall_region:
-			expand_np[i] = 1
+	# for i in range(NoP_wall): 
+	# 	if i in wall_region:
+	# 		expand_np[i] = 1
 			
-	for i, pointID in enumerate(wall_region):
+	# for i, pointID in enumerate(wall_region):
 
-		cur_pt = wall_model.GetPoints().GetPoint(pointID)
-		wall_normal = [r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ]
+	# 	cur_pt = wall_model.GetPoints().GetPoint(pointID)
+	# 	wall_normal = [r1 - r2 for (r1, r2) in zip(cur_pt, wall_to_center[pointID]) ]
 
-		displace = []
-		new_pt = []
+	# 	displace = []
+	# 	new_pt = []
 
-		if expansion_mode == 'scalar':
-			displace = [expand[i]*dn for (r, dn) in zip(cur_pt, normal)]
-			new_pt = [r + dr for (r, dr) in zip(cur_pt, displace)]
+	# 	if expansion_mode == 'scalar':
+	# 		displace = [expand[i]*dn for (r, dn) in zip(cur_pt, normal)]
+	# 		new_pt = [r + dr for (r, dr) in zip(cur_pt, displace)]
 			
 
-		elif expansion_mode == 'absolute':
+	# 	elif expansion_mode == 'absolute':
 
-			if expand[i] < min_dists[pointID]: 
-				expand[i] = min_dists[pointID]
+	# 		if expand[i] < min_dists[pointID]: 
+	# 			expand[i] = min_dists[pointID]
 
-	 		wall_unit = [xi/min_dists[pointID] for xi in wall_normal]
-			displace = [r*expand[i] for r in wall_unit]
-			new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
+	#  		wall_unit = [xi/min_dists[pointID] for xi in wall_normal]
+	# 		displace = [r*expand[i] for r in wall_unit]
+	# 		new_pt = [r + dr for (r, dr) in zip(wall_to_center[pointID], displace)]
 
-		# after applying the displacement to the wall points, modify displacement magnitude for branch shift
-		displace_adjusted = [d - n for (d, n) in zip (displace, wall_normal)]
+	# 	# after applying the displacement to the wall points, modify displacement magnitude for branch shift
+	# 	displace_adjusted = [d - n for (d, n) in zip (displace, wall_normal)]
 
-		for face, points in intersect.iteritems():
-			if pointID in points:
-				affected_face_displace[face].append(np.array(displace_adjusted))
+	# 	for face, points in intersect.iteritems():
+	# 		if pointID in points:
+	# 			affected_face_displace[face].append(np.array(displace_adjusted))
 
 
 		# alter the current point's coordinates to reflect expansion
@@ -131,7 +131,7 @@ def grow_aneurysm(wall_name, face_to_points, point_to_face, face_to_cap, point_c
 	print '>>>  the maximum displacement: ', np.max(expand_np)
 	print '>>>  the wall ref shape: ', wall_ref.shape
 
-	shift_branches(wall_model, wall_region, intersect, originals, affected_face_displace, face_to_cap, face_to_points, point_connectivity, easing)
+	# shift_branches(wall_model, wall_region, intersect, originals, affected_face_displace, face_to_cap, face_to_points, point_connectivity, easing)
 	
 	# add min dist to vtk file, for debugging purposes
 	min_dist_vtk = nps.numpy_to_vtk(min_dists)

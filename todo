@@ -1,0 +1,14 @@
+
+
+--- 
+create a function like 
+extract_label_ids 
+
+where basically we have to talk all the points again and then basically figure out the order in which they should actually appear 
+--maybe we need to rewrite bibgboy? 
+
+basically the current arrays are all indexed with the pointID? 
+and that's how it appears in prelim analysis too? 
+but i'm unsure how we can get the right point's information, but then when we try to attach the arrays the shit breaks. that's really interesting. 
+
+i wonder if setting teh point is now breaking something -- i'm gonna have to see if attaching the arrays before that all happens will make a difference

@@ -213,7 +213,8 @@ def projection(NoP, centerline, wall_points, included_ids):
 	wall_to_center = {}
 	min_dists = np.zeros(NoP)
 
-	chunk_sz = 500
+	chunk_sz = 400
+	print len(included_ids)
 	n_chunks = len(included_ids)//chunk_sz
 
 	for c in tqdm(range(n_chunks), desc='splitting projection computation', file=sys.stdout):

@@ -9,7 +9,7 @@ from AneurysmGeneration.utils.batch import return_unstructured, return_polydata
 
 
 
-def clip_branch(polydata, normal, origin, extractor):
+def clip_branch_plane(vtk_object, normal, origin, extractor):
 	'''
 	'''
 
@@ -18,7 +18,7 @@ def clip_branch(polydata, normal, origin, extractor):
 	plane.SetNormal(-1*normal)
 
 	extract = extractor
-	extract.SetInputData(polydata)
+	extract.SetInputData(vtk_object)
 	extract.SetImplicitFunction(plane)
 	extract.SetExtractBoundaryCells(True)
 	extract.Update()
@@ -26,7 +26,7 @@ def clip_branch(polydata, normal, origin, extractor):
 	return extract.GetOutput()
 
 	
-def clip_branch_sphere(polydata, center, radius, extractor):
+def clip_branch_sphere(vtk_object, center, radius, extractor):
 	'''
 	'''
 
@@ -35,7 +35,7 @@ def clip_branch_sphere(polydata, center, radius, extractor):
 	sphere.SetRadius(radius)
 
 	extract = extractor
-	extract.SetInputData(polydata)
+	extract.SetInputData(vtk_object)
 	extract.SetExtractInside(False)
 	extract.SetImplicitFunction(sphere)
 	extract.SetExtractBoundaryCells(True)
@@ -72,7 +72,7 @@ def apply_clipping(path, vessel, shape, suff,
 	results = reader(in_file)
 
 	for normal, origin in zip(normals, origins): 
-		results = clip_branch(results, normal, origin, extractor)
+		results = clip_branch_plane(results, normal, origin, extractor)
 
 	if sphere_clips is not None: 
 		print 'using sphere clips'
@@ -88,6 +88,29 @@ def apply_clipping(path, vessel, shape, suff,
 	print 'exiting apply_clipping'
 
 
+def clip_side_branches_wrap(unstructured, vessel, shape): 
+
+	param_dict, all_sphere_clips = get_clip_parameters(vessel, shape)
+	if param_dict is None: 
+		return unstructured
+
+	if suff in param_dict.keys(): 
+		origins, normals = param_dict[suff]
+		
+	sphere_clips = None if all_sphere_clips is None else all_sphere_clips[suff]
+	if sphere_clips is not None: 
+		center, radius = zip(*sphere_clips)
+
+	extractor_plane = vtk.vtkExtractGeometry()
+	unstructured = clip_branch_plane(unstructured, normals, origins, extractor)
+
+	extractor_sphere = vtk.vtkExtractGeometry()
+
+	unstructured = clip_branch_sphere(unstructured, center, radius, extractor_sphere)
+
+	return unstructured
+
+
 def big_operator(suff, normals, origins, sphere_clips = None):
 
 	reader = vtk.vtkXMLPolyDataReader()
@@ -97,7 +120,7 @@ def big_operator(suff, normals, origins, sphere_clips = None):
 
 	
 	for normal, origin in zip(normals, origins):
-		poly_results = clip_branch(poly_results, normal, origin) 
+		poly_results = clip_branch_plane(poly_results, normal, origin) 
 
 	if sphere_clips is not None:
 		print 'using sphere clips'
@@ -237,10 +260,10 @@ def main():
 	vessel = 'baseline/'
 	shape = 'ASI6'
 	mode = '.vtu'
-#	mode = '.vtp'
+# 	mode = '.vtp'
 
-	suffs = ['p3']	
-#	suffs = ['p2', 'p3', 'p4']
+# 	suffs = ['p3']	
+	suffs = ['p2', 'p3', 'p4', 'p5']
 #	suffs = ['lad1', 'lad2', 'lad3', 'lad4', 'lad5']
 
 	param_dict, all_sphere_clips = get_clip_parameters(vessel, shape)
