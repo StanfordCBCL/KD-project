@@ -3,7 +3,7 @@ clear all
 
 dt =  0.000811;
 time = dt:dt:(dt*1000) ; 
-path = [ '~/Documents/lab/KD-project/AdvectionDiffusion/right/asi2/d5/RT1/' ] ;
+path = [ '~/Documents/lab/KD-project/AdvectionDiffusion/right/asi2/m5/RT1/' ] ;
 %path = ['~/Documents/lab/KD-project/AdvectionDiffusion/baseline/asi6/' ];
 
 no_offset = false;
