@@ -17,32 +17,103 @@ i wonder if setting teh point is now breaking something -- i'm gonna have to see
 
 -----
 
-to run the FSI code 
+To run the FSI code for dye retention time 
 - all results
-- mesh 
-	 need 
-
-
+- mesh:
 	 rca_m5_asi2
 	 	all_results.vtu
 		mesh-complete.mesh.vtu
 		inflow.vtp
 
-config script probably doesn't need to be changed
 
-will probably be pretty speedy
+----
+THINGS TO CHANGE IN MANUSCRIPT 
 
-
-add some more references 
+REFERENCE CHANGES
+add some more references:
 - the kim et al paper that includes coronary BC 
 - papers w/ other methods, closed-looop LPN, 
-- include more motivation about which aneurysm shape parameters were chosen 
-- figure out secondary flows/how to quantify jet fluctuation 
+
+WRITING CHANGES: 
 - figure out figure organization
-- talk about FSI in the paper (both why we haven't done it yet, and also that it's a nice future step)
-- develpping a framework that allows significant testing but optimizes utilization of patient data 
-- using rigid simulations bc anatomical changes are central to hemodynamics, and potentially localized changes matter less
+- include more motivation about which aneurysm shape parameters were chosen 
+- developing a framework that allows significant testing, optimizes utilization of patient data 
 - this framework allows for experimentation with material property effects as well 
+- talk about FSI in the paper (both why we haven't done it yet, and also that it's a nice future step)
+- using rigid simulations bc anatomical changes are central to hemodynamics, and potentially localized changes matter less
 
 
+methodology changes: 
+- figure out secondary flows/how to quantify jet fluctuation 
+
+
+(DONE)
+
+
+-----
+FORMATTING REQUIREMENTS FROM Biomechanics and Modeling in Mechanobiology
+
+Title page: 
+	author names
+	title
+	affiliations + addresses
+	email address + telephone number of ocrresponding author
+	ORCIDs
+
+Abstract 
+	150 - 250 words
+
+Keywords
+	4 - 6 keywords
+
+Text
+	LaTeX?? 
+	submission should include original source including all style files and figures and a PDF version of the compiled output
+
+	but word files are also accepted
+
+
+Acknowledgments
+	placed in a separate section on the titl,e page 
+	names of funding organizations should be written in full
+
+
+Scientific Style
+	italic for single letters that denote mathematical constants, variables, unknown quantities
+
+	roman/upright for numerals, operators, punctuation, commonly defined functions or abbreviations
+
+	bold for vectors, tensors, matrices
+
+
+REFERENCES
+	Cite references by name and year in parentheses ([last name] year; [last name] year; ...)
+
+	List of refeerences should only include works that are cited in the text and that have been published or accepted for publication
+
+	Alphabetize by last name of the first author of each work -> later authors -> chronologically
+
+tables
+	Numebr tbales using Arabic numerals, cite in numerical order 
+
+	supply a table caption explaining hte componentso f the table 
+
+
+Figures
+	MSOffice files are also acceptable? 
+	
+	name figures files Fig[number].eps
+	
+	use sans serif fonts to number figures using 8-12 point font with consistent type size
+
+	figures should have a concise caption describing accurately what the figure depicts. include the captions in the text file of the manuscript, not in the figure file. 
+
+	figure captiosn with the term Fig. in bold type, followed by figure number, also in bold type. 
+		no punctuation after the number, no puncutation at the end of the caption 
+
+	size figures to fit column width
+
+-----
+
+SB3C CONFIRMATION NUMBER
 8bx4rq
