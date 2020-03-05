@@ -115,5 +115,26 @@ Figures
 
 -----
 
-SB3C CONFIRMATION NUMBER
-8bx4rq
+literally fml lol i need to re run simulations 
+
+1) upload meshes and stuff again 
+2) prepare svpre file again 
+3) run preprocessing
+4) test out gcode 
+5) run simulation 
+6) compress restart files -> restart, geombc
+7) run FSI simulation
+8) look at FSI simulation results
+
+
+
+
+
+------
+so i need to 
+- cite justins paper about using FSI 
+- cite the paper about RT vs dye advection vs particle tracing 
+- interpret the dye advection results 
+- add secondary flow results, make that figure 
+
+

@@ -1,8 +1,21 @@
 '''
 	integrator_script.py
 
-	requires you to call this script by alias'ing pvpython in bashrc/bash_profile in order 
-	to import paraview.simple module; :/ 
+	on my Mac, I was able to only able to import paraview.simple by by alias'ing pvpython in bashrc/bash_profile 
+	otherwise, this should work pretty directly
+
+	script function: 
+		define data structures for holding integrated results 
+
+		define some strings used to navigate the data directory 
+		assumes that the data files are located in directories structured like: 
+			[base_path] 
+				[vessel] 
+					[shape_index] 
+						[position, size]
+
+		the integrated variable dictionaries are written out as pickles
+
 
 '''
 
@@ -121,7 +134,10 @@ def osi_above_threshold(reader, osi_upper=.5):
 
 
 def main():
+	"""
+	"""
 
+	# define some data structures in which the integrated results are going to be held
 	computed_vars = {
 	'WSS_THRESHOLD_AREA': {}, 
 	'WSS_CYCLE': {},
@@ -134,6 +150,8 @@ def main():
 	'OSI_THRESHOLD_AREA': osi_above_threshold
 	}
 
+
+	# define some parameters for finding the data .vtp files 
 	base_path = '/Users/alex/Documents/lab/KD-project/clipped_results_short/'
 	vessel = 'RCA/'
 #	vessel = 'LAD/'
@@ -145,6 +163,7 @@ def main():
 	medial = ['m1', 'm2', 'm3', 'm4', 'm5']
 	distal = ['d1', 'd2', 'd3', 'd4', 'd5']
 
+	# iterate over the data directory 
 	for shape in shapes: 
 		if 'RCA'in vessel: 
 			pos_sizes = proximal + medial + distal
@@ -169,6 +188,5 @@ def main():
 		if val is not None: write_to_file(var+'_' + vessel[:-1], val)
 
 if __name__ == "__main__":
-
 	main()
 	
