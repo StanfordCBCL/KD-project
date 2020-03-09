@@ -223,8 +223,7 @@ def batch_second_flows():
 		centers, normals = slice_parameters(option['centerline'], option['start'], option['length'])
 		all_second_flows, areas = compute_secondary_flow(centers, normals, option['suffix'])
 
-		results[option['suffix']] = (all_second_flows, areas)
-		break
+		results[option['suffix']] = (all_second_flows, areas, centers, normals)
 
 	write_to_file('second_flows_dict', results)
 
