@@ -32,7 +32,6 @@ def compute_secondary_flow(centers, normals, suffix):
 
 	filename = '/Users/alex/Documents/lab/KD-project/clipped_results_short/RCA/ASI2/' + suffix + '.vtu'
 	vtu = XMLUnstructuredGridReader(FileName=[filename])
-	# vtu = XMLUnstructuredGridReader(FileName=['/Users/alex/Documents/lab/KD-project/clipped_results_short/RCA/ASI2/p5.vtu'])
 
 	step_lower = 3000
 	step_upper = 4000
@@ -41,6 +40,7 @@ def compute_secondary_flow(centers, normals, suffix):
 
 	all_second_flows = []
 	areas = []
+	velocity_peaks = []
 
 	for center, normal in zip(centers, normals):
 
@@ -55,50 +55,53 @@ def compute_secondary_flow(centers, normals, suffix):
 			cross_slice.SliceType.Origin = center
 			cross_slice.SliceType.Normal = normal
 
-			# # surface vectors - use the paraview surface vectors to directly remove the out-of-plane component
-			# surfaceVectors = SurfaceVectors(Input=cross_slice)
-			# surfaceVectors.SelectInputVectors = ['POINTS', 'velocity_03200']
-
-			# results = paraview.servermanager.Fetch(surfaceVectors)
-			# # print(results)
-
-			# inplane_surf_vec = nps.vtk_to_numpy(results.GetPointData().GetArray('velocity_03200'))
-
-			######  anotehr method - use the sliced field result to manually subtract the out-of-plane component 
+			## use the sliced field result to manually subtract the out-of-plane component 
+			## this is when we compute u - (u \cdot n)n 
 			slice_results = paraview.servermanager.Fetch(cross_slice)
 			sliced_field = nps.vtk_to_numpy(slice_results.GetPointData().GetArray('velocity_0' + str(step)))
-
-			# print normal
-			# assert np.linalg.norm(normal) == 1.0
-
+			
 			inplane_manual = sliced_field - normal * np.dot(sliced_field, normal)[:, None]
-			# print(inplane_manual.shape)
 
+			## (u - (u \cdot n)n )^2  -- chose to compute this as squared L2 norm because u - (u \cdot n)n is a vector
 			integrand = np.square(np.linalg.norm(inplane_manual, axis=1)) 
 
 			integrand_vtk = nps.numpy_to_vtk(integrand)
-			integrand_vtk.SetName('test')
+			integrand_vtk.SetName('integrand_0' + str(step))
 
 			slice_results.GetPointData().AddArray(integrand_vtk)
+			slice_results.GetPointData().Update()
 
 			temp = vtk.vtkXMLPolyDataWriter()
 			temp.SetInputData(slice_results)
 			temp.SetFileName('cache.vtu' )
 			temp.Write()
 
-			slice_read_two = XMLPolyDataReader(FileName=['cache.vtu'])
+			cache_slice = XMLPolyDataReader(FileName=['cache.vtu'])
 
-			integrateVariables = IntegrateVariables(Input=slice_read_two)
+			integrateVariables = IntegrateVariables(Input=cache_slice)
 			integrated_result = paraview.servermanager.Fetch(integrateVariables)
 
-			if i == 0: 
-				areas.append(integrated_result.GetCellData().GetArray('Area').GetTuple(0)[0])
-
-			second_flows_slice[i] = integrated_result.GetPointData().GetArray('test').GetTuple(0)[0]
-
+			second_flows_slice[i] = integrated_result.GetPointData().GetArray('integrand_0' + str(step)).GetTuple(0)[0]
+		
 		all_second_flows.append(second_flows_slice)
 
-	return all_second_flows, areas
+
+		integrateVariables = IntegrateVariables(Input=cache_slice)
+		integrated_result = paraview.servermanager.Fetch(integrateVariables)
+
+		areas.append(integrated_result.GetCellData().GetArray('Area').GetTuple(0)[0])
+
+		integrated_velocity_peak = max(map(np.linalg.norm, [
+			integrated_result.GetPointData().GetArray('velocity_03200').GetTuple(0),
+			integrated_result.GetPointData().GetArray('velocity_03250').GetTuple(0), 
+			integrated_result.GetPointData().GetArray('velocity_03300').GetTuple(0), 
+			integrated_result.GetPointData().GetArray('velocity_03350').GetTuple(0), 
+
+		]))
+
+		velocity_peaks.append(integrated_velocity_peak)
+
+	return all_second_flows, areas, velocity_peaks
 
 
 def normalized_centerline_pth(center):
@@ -143,7 +146,7 @@ def slice_parameters(centerline, start, length, positions=6):
 	NoP_center, normalized_center, centerline_length = normalized_centerline_pth(centerline)
 
 	# compute the normalized length -> normalized end position
-	end=start+ length/centerline_length
+	end = start + length/centerline_length
 
 	# print(len(centerline))
 	aneurysm_segment = centerline[(normalized_center >= start) & (normalized_center <= end)]
@@ -157,8 +160,6 @@ def slice_parameters(centerline, start, length, positions=6):
 	t21_normed = np.divide(t21, np.linalg.norm(t21, axis=1).reshape(NoP, 1))
 
 	# print(len(aneurysm_segment))
-
-	# interval = length/(positions+1)
 	
 	interval = len(aneurysm_segment)/(positions+1)
 	indices = [i*interval for i in range(1, positions+1)]
@@ -193,21 +194,8 @@ def batch_second_flows():
 
 	# define the location of models, centerlines, metadata and specify the wall_name
 	model_dir = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/"
-	wall_name = "/Users/alex/Documents/lab/KD-project/AneurysmGeneration/models/SKD0050/SKD0050_baseline_model.vtp"
 	targets_name = "/AneurysmGeneration/targets.txt"
 	# targets_name = "/AneurysmGeneration/left_targets.txt"
-
-	# some options 
-	EASING = False
-	PICKLE = False
-	FROM_PICKLE = True
-	BATCH = True
-	PLOT_CL = False
-
-	# be lazy -- hard code the exclude, face, and cap list
-	exclude = [1]
-	face_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-	cap_list = [13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 
 	# find the centerline files within the model directory and represent them as np arrays; 
 	# find the names of the centerline files (without the .pth file ending)
@@ -221,11 +209,11 @@ def batch_second_flows():
 	for option in options: 
 		print option['suffix']
 		centers, normals = slice_parameters(option['centerline'], option['start'], option['length'])
-		all_second_flows, areas = compute_secondary_flow(centers, normals, option['suffix'])
+		all_second_flows, areas, velocity_peaks = compute_secondary_flow(centers, normals, option['suffix'])
 
-		results[option['suffix']] = (all_second_flows, areas, centers, normals)
+		results[option['suffix']] = (all_second_flows, areas, velocity_peaks, centers, normals)
 
-	write_to_file('second_flows_dict', results)
+	write_to_file('second_flows_dict_2', results)
 
 
 if __name__ == "__main__": 
